@@ -1,25 +1,26 @@
 require ('../dlib/mutil.js')
-//~ Fdrandom=require ('../Fdrandom.min.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
-Broad=require('../barsort.js')
+Barsort=require('../barsort.js')
 
-
-var tlen=15000000, tdlen=Math.floor(tlen/16), zum=0
+//~ var tlen=15000000
+var tlen=50000
 
 console.log((tlen*8/1000000).toFixed(0),"megabyte test array")
 
-//~ var int_rise=Fdrandom.bulk( tlen,function(){return zum+++Fdrandom.irange(0,2)} )
+//~ var zum=0,int_riser=Fdrandom.bulk( tlen,function(){return zum+++Fdrandom.irange(0,2)} )
 
-//~ var int_rough=Fdrandom.mixof(
-  //~ Fdrandom.bulk( tdlen,function(){return Fdrandom.irange(0,1000)} )
- //~ ,tlen
-//~ )
+//~ var int_rough=Fdrandom.mixof( Fdrandom.bulk( tdlen,function(){return Fdrandom.irange(0,100)*Fdrandom.irange(0,1000)} ) ,tlen )
 
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.gthorn()*Fdrandom.gthorn()*1000 } )
 var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.gnorm()*1000 } )
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.f48()*1000 } )
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.irange(1,600) } )
 //~ real_rg.push(100000000000)
+
+//~ speeds(real_rg)
+//~ return
+
+
 Fdrandom.repot("1")
 
   //~ bars  : bars
@@ -29,28 +30,24 @@ Fdrandom.repot("1")
 
 //~ var small_rg=Fdrandom.bulk( 40,function(){ return Fdrandom.gskip()*1000 } )
 
-//~ Broad.histobar(barnm,st,ov, barndx, scores, sectppl, dupe)
-//~ Broad.histobar(10,0,real_rg.length, [], real_rg, [], false)
-
-//barnum:,scores:,st:,ov:,keysbar:,barfreq:,savscore:
-
 var ado=real_rg 
 var bars=ado.length
 var barix=[],barfeq=[]
 
-//~ var nim = ado.sort( function(a,b){return a-b} ) 
-//~ var nim = ado.sort( function(a,b){return a-b} ) 
-//~ var nim = Broad.stndindex(ado)
-//~ return
-var nim = Broad.fullindex(ado)
-//~ var nim = Broad.stndindex(ado)
-
+var nim=[]
+//~ var nim = Barsort.fullindex(ado)
+for(var i=0;i<100;i++){
+Fdrandom.mixup(ado)
+nim = Barsort.stndindex(ado)
+//~ nim = Barsort.fullindex(ado)
+outbydex(ado,nim)
+}
 //console.log(nim)
 //~ var barx=barbtoinx(barix,barfeq)
 
-outbydex(real_rg,nim)
 console.log(nim[0])
 return
+
 
 Broad.bars({
  barnum: bars
@@ -70,40 +67,10 @@ function dmpbarval(ado,barix ){
   }
   console.log(oo.join(""))
 }
-//~ console.log(barfeq.join(" "))
 
-//~ console.log(barix.join(" "))
-
-var barx=barbtoinx(barix,barfeq)
 outbydex(ado,barx)
 outbybar(ado,barix,bars)
 return
-
-
-function bartoinx(barix){
-  var ind=new Array(barix.length)
-  for(var i=0,e=barix.length;i<e;i++){
-    ind[barix[i]]=i
-  }
-  return ind
-}
-
-
-function barbtoinx(barix,bfill){
-  
-  var rfill=bfill[0]; bfill[0]=0
-  for(var i=0,e=bfill.length-1; i<e; i++) {
-    var c=bfill[i+1]
-    bfill[i+1]=rfill
-    rfill+=c
-  }
-  
-  var ind=new Array(barix.length)
-  for(var i=0,e=barix.length;i<e;i++){
-    ind[bfill[barix[i]]++]=i
-  }
-  return ind
-}
 
 
 function outbybar(ado,barix,bars){
@@ -122,6 +89,7 @@ function outbybar(ado,barix,bars){
   if(noff.length){ console.log("wops",noff.join(" ")) }
 }
 
+
 function outbydex(ado,inx){
   
   var narr=[], noff=[], nlast=-Infinity,nlat=0
@@ -136,32 +104,49 @@ function outbydex(ado,inx){
   if(noff.length){ console.log("wops",noff.join(" ")) }
 }
 
-
 return
 
+function speeds(real_rg){
+console.log("speedtests",real_rg.length)
+
+//~ benit({
+  //~ dat:real_rg
+ //~ ,fnc:function(x){ Barsort.bars(x) }
+ //~ ,nam:'js sort'
+ //~ ,itr:8
+//~ })
+
 benit({
   dat:real_rg
- ,fnc:function(x){ x.sort( function(a,b){return a-b} ) }
- ,nam:'js sort'
+ ,fnc:function(x){ Barsort.stndindex(x) }
+ ,nam:'stndindex'
+ ,itr:8
+})
+
+benit({
+  dat:real_rg
+ ,fnc:function(x){ Barsort.fullindex(x) }
+ ,nam:'barsort'
  ,itr:8
 })
 
 
 benit({
   dat:real_rg
- ,fnc:function(x){ Broad.histobar(x) }
- ,nam:'js sort'
+ ,fnc:function(x){ Barsort.stndindex(x) }
+ ,nam:'stndindex'
  ,itr:8
 })
 
+}
 
 function benit(p){
-  var ii=0 ,le=tlen*p.mulz||1
   var tsa=p.dat, r=[]
-
+  var ii=0 ,le=tsa.length*p.mulz||1
+  
   bench( 
     function(){ 
-      for(var i=0;i<tsa.len;i++){ r[i]=tsa[ii=(ii<le)?ii+1:0] }
+      for(var i=0;i<tsa.length;i++){ r[i]=tsa[ii=(ii<le)?ii+1:0] }
       p.fnc(r)
     }
     ,p.itr
