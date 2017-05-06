@@ -30,8 +30,8 @@ This 'bar-ordered' index can be quickly rearranged by a simple insertion sort to
 
 `sorted_index = Barsort.sortindex(Array)`
 
-Performance stability
-=====================
+### Performance & stability
+
 Barsort is particularly fast and is stable for many 'organic' distributions.
 However extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where such failure is not a problem. 
 To fullfill the algorithms full potential it will be a future goal to make it accomodate extreme dynamic ranges itself. Currently the full `sortindex` method which combines barsort and insertsort, checks for getting suck on exceptional input, and can bail out to javascripts standard sort() in the unlikely event. 
