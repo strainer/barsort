@@ -4,6 +4,10 @@ Fdrandom=require ('../dlib/Fdrandom.js')
 Broad=require('../barsort.js')
 
 
+console.log([7,3,4,6].sort())
+
+return
+
 var tlen=15000000, tdlen=Math.floor(tlen/16), zum=0
 
 console.log((tlen*8/1000000).toFixed(0),"megabyte test array")
