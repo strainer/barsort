@@ -283,4 +283,3 @@ if (typeof exports !== 'undefined')
   else
   { (1,eval)('this')[mdname] = facfnc({}) } 
 }
-`
