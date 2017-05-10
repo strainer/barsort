@@ -3,7 +3,7 @@ Barsort
 
 Barsort has a roughly O(n) time algorithm similar to 'counting sort' or 'histogram sort'. 
 It creates an index which sorts numbers into equally populated 'bars' or ranges. 
-This 'bar index' can be used directly or as a step toward creating a fully sorted index.
+This 'bar index' can be used directly or to prepare an index to sort fully and very quickly.
 
 ```
 eg. Separating into 4 bars,
@@ -28,14 +28,12 @@ much more efficient that standard sorting.
 
 This 'bar-ordered' index can be quickly rearranged by a simple insertion sort to produce a fully ordered index. This function combines these:
 
-`sorted_index = Barsort.sortindex(Array)`
+`sorted_index = Barsort.fullindex(Array)`
 
 ### Performance & stability
 
-Barsort is particularly fast and is stable for many 'organic' distributions.
-However extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where such failure is not a problem. 
-To fullfill the algorithms full potential it will be a future goal to make it accomodate extreme dynamic ranges itself. Currently the full `sortindex` method which combines barsort and insertsort, checks for getting suck on exceptional input, and can bail out to javascripts standard sort() in the unlikely event. 
-Sortindex runs around twice as fast javascripts native Array.sort(), except for extreme input ranges when it is about 75% Array.sort() speed.
+Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where such failure is not a problem. 
+Currently the `fullindex` method which combines barsort and insertsort (to create a very fast general numeric sort), checks its own progress and can bail out to javascripts standard sort() in the event of poisoned input. With more developement it should be able to handle the possibility without reverting to native Array.sort 
 
 Usage
 -----
@@ -44,7 +42,7 @@ Usage
  //produce sorted index of input
  //using browser native sort() :
  
- sindex=barsort.stndindex( inputarray) 
+ sindex=barsort.stndindex( inputarray ) 
  
  //produce sorted index of input
  //using barsort and insertsort:
@@ -78,3 +76,4 @@ barsortix=Barsort.barstoix(keysbar,barpopl)
 Version History
 ---------------
 * 0.5.0 - pre release, in use and testing ...
+* 0.6.0 - repo fixed, pre release in use and testing ...

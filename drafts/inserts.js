@@ -2,11 +2,11 @@ require ('../dlib/mutil.js')
 //~ Fdrandom=require ('../Fdrandom.min.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
 
-var testlen=100000
+var testlen=50000
 
 var rough=Fdrandom.mixof(Fdrandom.bulk( 500,function(){return Fdrandom.irange(0,1000)} ),Math.floor(testlen))
 
-insertsort3( rough )
+insertsort0( rough )
 
 return
 

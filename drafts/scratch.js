@@ -3,7 +3,13 @@ require ('../dlib/mutil.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
 Broad=require('../barsort.js')
 
+//~ var tug=NaN
+var tug=-Infinity
+console.log(tug>2)
 
+
+console.log(Math.pow(2,48))
+return
 console.log([7,3,4,6].sort())
 
 return
