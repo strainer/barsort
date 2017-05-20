@@ -2,8 +2,8 @@ Barsort
 =======
 
 Barsort has a roughly O(n) time algorithm similar to 'counting sort' or 'histogram sort'. 
-It creates an index which sorts numbers into equally populated 'bars' or ranges. 
-This 'bar index' can be used directly or to prepare an index to sort fully and very quickly.
+It creates an index which orders numbers into equally populated 'bars' or ranges. 
+This 'bar index' can be used directly or to prepare an index to sort fully and (very quickly).
 
 ```
 eg. Separating into 4 bars,
@@ -24,30 +24,26 @@ bar_ord : [ 0, 9,10,3,6,1,4,5,11,7,2,8 ]
 ```
 Which is like a full ordering index, except the order given inside bars
 is unsorted. When full sorting is not required, `barsort.barindex({opts...})` is
-much more efficient that standard sorting.
+much faster than a standard sort.
 
-This 'bar-ordered' index can be quickly rearranged by a simple insertion sort to produce a fully ordered index. This function combines these:
+This 'bar-ordered' index can be quickly rearranged by a simple insertion sort to produce a fully ordered index. This function combines these, with edge case handling resulting in a very fast and stable numeric sort:
 
 `sorted_index = Barsort.fullindex(Array)`
 
-### Performance & stability
-
-Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where such failure is not a problem. 
-Currently the `fullindex` method which combines barsort and insertsort (to create a very fast general numeric sort), checks its own progress and can bail out to javascripts standard sort() in the event of poisoned input. With more developement it should be able to handle the possibility without reverting to native Array.sort 
 
 Usage
 -----
 ```javascript 
 
  //produce sorted index of input
- //using browser native sort() :
+ //using browsers native sort() :
  
  sindex=barsort.stndindex( inputarray ) 
  
  //produce sorted index of input
  //using barsort and insertsort:
  
- sindex=barsort.fullindex( inputarray) 
+ sindex=barsort.fullindex( inputarray ) 
                                        
  //produce a bar index (partial sort)
  //of the input array 'scores'
@@ -55,14 +51,18 @@ Usage
  //or an array (pre-prepared) containing the 
  //key data scores:
  
-Barsort.bars({
-  barnum: number_of_bars_to_arrange
- ,scores: input_array_scores_to_index 
- ,st:,ov: //optional section
+Barsort.barindex({
+  barnum: number_of_bars_to_allocate
+ ,scores: input_array_numeric_scores 
  ,keysbar: output_array_barofinput
- ,barpopl: output_array_populationofbar
+ /* //optional
+ ,st:,ov: //section of input to index
+ ,barppl: output_population_of_bars
  ,burnscore:0 //true to overwrite input 
  ,resolution: bar_oversample_factor
+ ,descend: descending order
+ ,secure: slower, no misordering
+ */
 })
   
  //produce a bar sorted index from
@@ -73,7 +73,39 @@ barsortix=Barsort.barstoix(keysbar,barpopl)
 
 ```	
 
+### Performance & stability
+
+Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where that is not a problem. 
+
+The `fullindex` method which combines barsort, insertsort and other process to create a very fast general numeric sort, monitors its own progress and can bail out to javascripts standard sort() in the event of poisoned input. With more developement it should be able to handle the possibility without reverting to native Array.sort 
+
+### Summary of speedtests:
+
+##### Easy Distribution:                        
+
+Array Lengths    |     100   |    10,000   | 1,000,000
+ :-------------- | :-------: | :---------: | :----------
+Standard sort    |    100 %  |    100 %    |    100 %
+Timsort sort     |    300 %  |    600 %    |   1200 %
+Barsort sort     |    270 %  |    550 %    |   1000 %
+
+##### Normal distribution
+ :-------------- | :-------: | :---------: | :----------
+Standard sort    |    100 %  |    100 %    | 100 %
+Timsort sort     |     60 %  |     35 %    |  20 %
+Barsort sort     |    250 %  |    500 %    | 800 %
+
+##### Tough distribution
+:-------------- | :-------: | :---------: | :----------
+Standard sort   |     100 % |    100 %    |    100 %
+Timsort sort    |      50 % |     40 %    |     50 %
+Barsort sort    |     120 % |    220 %    |   1000 %
+
+(* Speed in percent, 200% is twice as fast )
+
+``
 Version History
 ---------------
 * 0.5.0 - pre release, in use and testing ...
 * 0.6.0 - repo fixed, pre release in use and testing ...
+* 0.8.0 - much developed and testing ...

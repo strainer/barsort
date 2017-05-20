@@ -55,7 +55,7 @@ bench = function (mthd, bentime, mthd_legend, mthd_arg) {
   var duereps=Math.floor(bentime/roughtmrep)
   
   if(duereps<2){ 
-    ops=treps/(ctm*1000000)
+    ops=treps/(ctm*1000)
   }else{
     
   var batches=Math.floor(Math.log(duereps)+0.5)
