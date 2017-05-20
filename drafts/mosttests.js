@@ -26,7 +26,7 @@ function testbatch(){
   var tloops=10000
   var tlens=[10,100,1000,10000]
   var tlens=[50,200,5000,100000]
-  var tlens=[100,10000,1000000]
+  var tlens=[100,10000,1000000,5000000]
   //~ var tlens=[1000000]
   
   var dists=[
@@ -146,7 +146,7 @@ function testbatch(){
           
           benit({
             dat:tzA
-           ,fnc:function(){ return Timsort.sort(tzA.slice()) }
+           ,fnc:function(){ return Timsort.sort(tzA.slice(),function(a,b){return a-b} ) }
            ,nam:'timsort  '
            ,itr:1
           })

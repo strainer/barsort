@@ -75,31 +75,37 @@ barsortix=Barsort.barstoix(keysbar,barpopl)
 
 ### Performance & stability
 
-Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where that is not a problem. 
+Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](https://github.com/strainer/fancy/wiki/spotmap) where that is not a problem. 
 
 The `fullindex` method which combines barsort, insertsort and other process to create a very fast general numeric sort, monitors its own progress and can bail out to javascripts standard sort() if it gets stuck on toxic input. In testing lately, even the most extreme test samples are not causing it to stall and bail out.
 
 ### Summary of speedtests:
 
-Easy Distribution - Lengths  |     100   |    10,000   | 1,000,000
+Pre-sorted input, Lengths: |     100   |    10,000   | 1,000,000
  :-------------- | :-------: | :---------: | :----------
-Standard sort    |    100 %  |    100 %    |    100 %
-Timsort sort     |    300 %  |    600 %    |   1200 %
-Barsort sort     |    270 %  |    550 %    |   1000 %
+Native sort      |    100 %  |    100 %    |    100 %
+Timsort sort     |    450 %  |   1500 %    |   2200 %
+Barsort sort     |    270 %  |    550 %    |    900 %
 
- Normal distribution|     100   |    10,000   | 1,000,000
+Normal distribution |     100   |    10,000   | 1,000,000
  :-------------- | :-------: | :---------: | :----------
-Standard sort    |    100 %  |    100 %    | 100 %
-Timsort sort     |     60 %  |     35 %    |  20 %
+Native sort      |    100 %  |    100 %    | 100 %
+Timsort sort     |    150 %  |    150 %    | 200 %
 Barsort sort     |    250 %  |    500 %    | 800 %
 
 Tough distribution |     100   |    10,000   | 1,000,000   
 :-------------- | :-------: | :---------: | :----------
-Standard sort   |     100 % |    100 %    |    100 %
-Timsort sort    |      50 % |     40 %    |     50 %
-Barsort sort    |     120 % |    220 %    |   1000 %
+Native sort     |     100 % |    100 %    |    100 %
+Timsort sort    |      90 % |     90 %    |    120 %
+Barsort sort    |     120 % |    220 %    |    700 %
 
-(* Speeds in percent, 200% is twice as fast )
+
+(* Speeds are in percent (200% is twice as fast).
+ 
+ Benchmark data is in [drafts/testedsort.log](drafts/testedsort.log)
+   
+ [Timsort](https://github.com/mziccard/node-timsort) is a popular multipurpose in-place sort.
+)
 
 
 Version History

@@ -1,121 +1,161 @@
 Batch Testing Barsort
 
 :: 100 equally distributed reals from -20 to 20
-fullindex 0.0616 Mfunc/s 
-stndindex 0.0686 Mfunc/s 
-timsort   0.0208 Mfunc/s 
+fullindex 0.0615 Mfunc/s 
+stndindex 0.0688 Mfunc/s 
+timsort   0.0397 Mfunc/s 
 
 :: 10000 equally distributed reals from -20 to 20
-fullindex 657.5260 func/s 
-stndindex 503.9773 func/s 
-timsort   153.9323 func/s 
+fullindex 657.3302 func/s 
+stndindex 491.3492 func/s 
+timsort   274.4364 func/s 
 
 :: 1000000 equally distributed reals from -20 to 20
-fullindex 3.6145 func/s 
-stndindex 4.6630 func/s 
-timsort   1.3966 func/s 
+fullindex 3.5672 func/s 
+stndindex 4.6367 func/s 
+timsort   2.5796 func/s 
+
+:: 5000000 equally distributed reals from -20 to 20
+fullindex 0.5757 func/s 
+stndindex 0.7917 func/s 
+timsort   0.4686 func/s 
 
 :: 100 huge magnitude with gaps and duplicates
-fullindex 0.0674 Mfunc/s 
-stndindex 0.0448 Mfunc/s 
-timsort   0.0206 Mfunc/s 
+fullindex 0.0660 Mfunc/s 
+stndindex 0.0817 Mfunc/s 
+timsort   0.0378 Mfunc/s 
 
 :: 10000 huge magnitude with gaps and duplicates
-fullindex 565.0700 func/s 
-stndindex 224.0837 func/s 
-timsort   88.7898 func/s 
+fullindex 629.3686 func/s 
+stndindex 229.1321 func/s 
+timsort   195.6514 func/s 
 
 :: 1000000 huge magnitude with gaps and duplicates
-fullindex 3.9856 func/s 
-stndindex 0.8794 func/s 
-timsort   0.3301 func/s 
+fullindex 4.0970 func/s 
+stndindex 0.8422 func/s 
+timsort   1.1877 func/s 
+
+:: 5000000 huge magnitude with gaps and duplicates
+fullindex 0.5560 func/s 
+stndindex 0.1199 func/s 
+timsort   0.2129 func/s 
 
 :: 100 gaussian distribution -1 to 1
-fullindex 0.0603 Mfunc/s 
-stndindex 0.0251 Mfunc/s 
-timsort   0.0139 Mfunc/s 
+fullindex 0.0549 Mfunc/s 
+stndindex 0.0245 Mfunc/s 
+timsort   0.0366 Mfunc/s 
 
 :: 10000 gaussian distribution -1 to 1
-fullindex 595.6016 func/s 
-stndindex 107.5006 func/s 
-timsort   36.1670 func/s 
+fullindex 618.5481 func/s 
+stndindex 106.9090 func/s 
+timsort   179.0723 func/s 
 
 :: 1000000 gaussian distribution -1 to 1
-fullindex 4.1745 func/s 
-stndindex 0.5978 func/s 
-timsort   0.1032 func/s 
+fullindex 4.0779 func/s 
+stndindex 0.4343 func/s 
+timsort   1.1850 func/s 
+
+:: 5000000 gaussian distribution -1 to 1
+fullindex 0.5301 func/s 
+stndindex 0.0728 func/s 
+timsort   0.2097 func/s 
 
 :: 100 sideloaded reals -1000 to 1000
-fullindex 0.0624 Mfunc/s 
-stndindex 0.0267 Mfunc/s 
-timsort   0.0167 Mfunc/s 
+fullindex 0.0584 Mfunc/s 
+stndindex 0.0166 Mfunc/s 
+timsort   0.0366 Mfunc/s 
 
 :: 10000 sideloaded reals -1000 to 1000
-fullindex 615.8967 func/s 
-stndindex 103.4599 func/s 
-timsort   39.3479 func/s 
+fullindex 598.4013 func/s 
+stndindex 78.0023 func/s 
+timsort   180.0015 func/s 
 
 :: 1000000 sideloaded reals -1000 to 1000
-fullindex 4.0269 func/s 
-stndindex 0.4036 func/s 
-timsort   0.1089 func/s 
+fullindex 4.1116 func/s 
+stndindex 0.4320 func/s 
+timsort   1.1847 func/s 
+
+:: 5000000 sideloaded reals -1000 to 1000
+fullindex 0.4988 func/s 
+stndindex 0.0717 func/s 
+timsort   0.1868 func/s 
 
 :: 100 midspiked reals with duplicates -200 to 200
-fullindex 0.0551 Mfunc/s 
-stndindex 0.0201 Mfunc/s 
-timsort   0.0179 Mfunc/s 
+fullindex 0.0607 Mfunc/s 
+stndindex 0.0202 Mfunc/s 
+timsort   0.0334 Mfunc/s 
 
 :: 10000 midspiked reals with duplicates -200 to 200
-fullindex 561.2672 func/s 
-stndindex 82.3823 func/s 
-timsort   55.7751 func/s 
+fullindex 601.2485 func/s 
+stndindex 86.1564 func/s 
+timsort   159.9033 func/s 
 
 :: 1000000 midspiked reals with duplicates -200 to 200
-fullindex 3.8808 func/s 
-stndindex 0.4227 func/s 
-timsort   0.1295 func/s 
+fullindex 4.0805 func/s 
+stndindex 0.4510 func/s 
+timsort   1.0176 func/s 
+
+:: 5000000 midspiked reals with duplicates -200 to 200
+fullindex 0.4717 func/s 
+stndindex 0.0743 func/s 
+timsort   0.1715 func/s 
 
 :: 100 descending ints
-fullindex 0.0579 Mfunc/s 
-stndindex 0.0185 Mfunc/s 
-timsort   0.0639 Mfunc/s 
+fullindex 0.0562 Mfunc/s 
+stndindex 0.0186 Mfunc/s 
+timsort   0.1525 Mfunc/s 
 
 :: 10000 descending ints
-fullindex 544.4321 func/s 
-stndindex 67.3683 func/s 
-timsort   608.8481 func/s 
+fullindex 527.4168 func/s 
+stndindex 68.0444 func/s 
+timsort   1766.3317 func/s 
 
 :: 1000000 descending ints
-fullindex 4.6654 func/s 
-stndindex 0.4096 func/s 
-timsort   6.0727 func/s 
+fullindex 4.6990 func/s 
+stndindex 0.3972 func/s 
+timsort   15.5630 func/s 
+
+:: 5000000 descending ints
+fullindex 0.7866 func/s 
+stndindex 0.0696 func/s 
+timsort   3.3475 func/s 
 
 :: 100 descending ints with maveric vals
-fullindex 0.0545 Mfunc/s 
-stndindex 0.0185 Mfunc/s 
-timsort   0.0260 Mfunc/s 
+fullindex 0.0544 Mfunc/s 
+stndindex 0.0177 Mfunc/s 
+timsort   0.0486 Mfunc/s 
 
 :: 10000 descending ints with maveric vals
-fullindex 587.5478 func/s 
-stndindex 89.2944 func/s 
-timsort   201.6610 func/s 
+fullindex 561.4212 func/s 
+stndindex 88.8252 func/s 
+timsort   337.6812 func/s 
 
 :: 1000000 descending ints with maveric vals
-fullindex 5.2858 func/s 
-stndindex 0.6236 func/s 
-timsort   1.6517 func/s 
+fullindex 4.9627 func/s 
+stndindex 0.5480 func/s 
+timsort   2.7840 func/s 
+
+:: 5000000 descending ints with maveric vals
+fullindex 0.8450 func/s 
+stndindex 0.1015 func/s 
+timsort   0.5108 func/s 
 
 :: 100 ascending ints
-fullindex 0.0750 Mfunc/s 
-stndindex 0.0211 Mfunc/s 
-timsort   0.0571 Mfunc/s 
+fullindex 0.0649 Mfunc/s 
+stndindex 0.0189 Mfunc/s 
+timsort   0.1442 Mfunc/s 
 
 :: 10000 ascending ints
-fullindex 784.7122 func/s 
-stndindex 78.0484 func/s 
-timsort   684.7519 func/s 
+fullindex 763.9577 func/s 
+stndindex 71.2222 func/s 
+timsort   2104.9963 func/s 
 
 :: 1000000 ascending ints
-fullindex 6.8120 func/s 
-stndindex 0.4676 func/s 
-timsort   6.8385 func/s 
+fullindex 6.5968 func/s 
+stndindex 0.4670 func/s 
+timsort   19.3067 func/s 
+
+:: 5000000 ascending ints
+fullindex 1.0396 func/s 
+stndindex 0.0806 func/s 
+timsort   3.4427 func/s 
