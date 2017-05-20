@@ -10,13 +10,13 @@ testbatch()
 function testbatch(){
   
   barchecking=false
-  barchecking=true
+  //~ barchecking=true
   detail_missbars=false
-  secure_barindex=true//false
+  secure_barindex=false//true//false
   bar_resolution=2
   sub_range=true
   
-  sortbenching=false//true
+  sortbenching=true//false//true
   sortchecking=false//true
   sortcheckout=false//true
   nopresort=false
