@@ -77,7 +77,7 @@ barsortix=Barsort.barstoix(keysbar,barpopl)
 
 Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](github.com/strainer/fancy/wiki/spotmap) where that is not a problem. 
 
-The `fullindex` method which combines barsort, insertsort and other process to create a very fast general numeric sort, monitors its own progress and can bail out to javascripts standard sort() in the event of poisoned input. With more developement it should be able to handle the possibility without reverting to native Array.sort 
+The `fullindex` method which combines barsort, insertsort and other process to create a very fast general numeric sort, monitors its own progress and can bail out to javascripts standard sort() if it gets stuck on toxic input. In testing lately, even the most extreme test samples are not causing it to stall and bail out.
 
 ### Summary of speedtests:
 
