@@ -81,21 +81,19 @@ The `fullindex` method which combines barsort, insertsort and other process to c
 
 ### Summary of speedtests:
 
-                        
-
-Easy Distribution : Lengths  |     100   |    10,000   | 1,000,000
+Easy Distribution - Lengths  |     100   |    10,000   | 1,000,000
  :-------------- | :-------: | :---------: | :----------
 Standard sort    |    100 %  |    100 %    |    100 %
 Timsort sort     |    300 %  |    600 %    |   1200 %
 Barsort sort     |    270 %  |    550 %    |   1000 %
 
- Normal distribution|        |             |
+ Normal distribution|     100   |    10,000   | 1,000,000
  :-------------- | :-------: | :---------: | :----------
 Standard sort    |    100 %  |    100 %    | 100 %
 Timsort sort     |     60 %  |     35 %    |  20 %
 Barsort sort     |    250 %  |    500 %    | 800 %
 
-##### Tough distribution |  |             |   
+Tough distribution |     100   |    10,000   | 1,000,000   
 :-------------- | :-------: | :---------: | :----------
 Standard sort   |     100 % |    100 %    |    100 %
 Timsort sort    |      50 % |     40 %    |     50 %
