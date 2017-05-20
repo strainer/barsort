@@ -1,0 +1,123 @@
+Batch Testing Barsort
+
+:: 100 equally distributed reals from -20 to 20 - passed sortchecks
+fullindex 0.0596 Mfunc/s 
+stndindex 0.0695 Mfunc/s 
+timsort   0.0212 Mfunc/s 
+
+:: 10000 equally distributed reals from -20 to 20 - passed sortchecks
+fullindex 657.6592 func/s 
+stndindex 510.8555 func/s 
+timsort   152.1928 func/s 
+
+:: 1000000 equally distributed reals from -20 to 20 - passed sortchecks
+fullindex 3.6857 func/s 
+stndindex 4.8308 func/s 
+timsort   0.0014 func/s 
+
+:: 100 huge magnitude with gaps and duplicates - passed sortchecks
+fullindex 0.0667 Mfunc/s 
+stndindex 0.0473 Mfunc/s 
+timsort   0.0201 Mfunc/s 
+
+:: 10000 huge magnitude with gaps and duplicates - passed sortchecks
+fullindex 573.8903 func/s 
+stndindex 236.2457 func/s 
+timsort   91.7386 func/s 
+
+:: 1000000 huge magnitude with gaps and duplicates - passed sortchecks
+fullindex 4.2969 func/s 
+stndindex 0.0009 func/s 
+timsort   0.0004 func/s 
+
+:: 100 gaussian distribution -1 to 1 - passed sortchecks
+fullindex 0.0602 Mfunc/s 
+stndindex 0.0251 Mfunc/s 
+timsort   0.0141 Mfunc/s 
+
+:: 10000 gaussian distribution -1 to 1 - passed sortchecks
+fullindex 639.4554 func/s 
+stndindex 112.0723 func/s 
+timsort   37.8541 func/s 
+
+:: 1000000 gaussian distribution -1 to 1 - passed sortchecks
+fullindex 4.2263 func/s 
+stndindex 0.0006 func/s 
+timsort   0.0001 func/s 
+
+:: 100 sideloaded reals -1000 to 1000 - passed sortchecks
+fullindex 0.0630 Mfunc/s 
+stndindex 0.0280 Mfunc/s 
+timsort   0.0164 Mfunc/s 
+
+:: 10000 sideloaded reals -1000 to 1000 - passed sortchecks
+fullindex 633.8434 func/s 
+stndindex 109.2658 func/s 
+timsort   40.3640 func/s 
+
+:: 1000000 sideloaded reals -1000 to 1000 - passed sortchecks
+fullindex 4.2173 func/s 
+stndindex 0.0006 func/s 
+timsort   0.0001 func/s 
+
+:: 100 midspiked reals with duplicates -200 to 200 - passed sortchecks
+fullindex 0.0550 Mfunc/s 
+stndindex 0.0203 Mfunc/s 
+timsort   0.0176 Mfunc/s 
+
+:: 10000 midspiked reals with duplicates -200 to 200 - passed sortchecks
+fullindex 555.9381 func/s 
+stndindex 87.6880 func/s 
+timsort   56.9562 func/s 
+
+:: 1000000 midspiked reals with duplicates -200 to 200 - passed sortchecks
+fullindex 4.0992 func/s 
+stndindex 0.0005 func/s 
+timsort   0.0001 func/s 
+
+:: 100 descending ints - passed sortchecks
+fullindex 0.0540 Mfunc/s 
+stndindex 0.0198 Mfunc/s 
+timsort   0.0595 Mfunc/s 
+
+:: 10000 descending ints - passed sortchecks
+fullindex 523.4803 func/s 
+stndindex 70.5000 func/s 
+timsort   585.3496 func/s 
+
+:: 1000000 descending ints - passed sortchecks
+fullindex 4.7412 func/s 
+stndindex 0.0004 func/s 
+timsort   5.8793 func/s 
+
+:: 100 descending ints with maveric vals - passed sortchecks
+fullindex 0.0511 Mfunc/s 
+stndindex 0.0184 Mfunc/s 
+timsort   0.0250 Mfunc/s 
+
+:: 10000 descending ints with maveric vals - passed sortchecks
+fullindex 548.1106 func/s 
+stndindex 90.5734 func/s 
+timsort   197.3915 func/s 
+
+:: 1000000 descending ints with maveric vals - passed sortchecks
+fullindex 4.8033 func/s 
+stndindex 0.0006 func/s 
+timsort   0.0016 func/s 
+
+:: 100 ascending ints - passed sortchecks
+fullindex 0.0678 Mfunc/s 
+stndindex 0.0192 Mfunc/s 
+timsort   0.0525 Mfunc/s 
+
+:: 10000 ascending ints - passed sortchecks
+fullindex 705.8082 func/s 
+stndindex 71.2177 func/s 
+timsort   622.2924 func/s 
+
+:: 1000000 ascending ints - passed sortchecks
+fullindex 6.2525 func/s 
+stndindex 0.0004 func/s 
+timsort   6.0526 func/s 
+
+Checked sorts 24 times. Saw 0 issues

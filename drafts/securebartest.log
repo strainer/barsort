@@ -1,0 +1,73 @@
+Batch Testing Barsort
+
+:: 100 equally distributed reals from -20 to 20
+Checked 37 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 10000 equally distributed reals from -20 to 20
+Checked 4679 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 equally distributed reals from -20 to 20
+Checked 305447 Bars. Bar popls: 2 to 3 Bar Order is clean
+
+:: 100 huge magnitude with gaps and duplicates
+Checked 36 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 10000 huge magnitude with gaps and duplicates
+Checked 4784 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 huge magnitude with gaps and duplicates
+Checked 534733 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 100 gaussian distribution -1 to 1
+Checked 63 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 10000 gaussian distribution -1 to 1
+Checked 4607 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 gaussian distribution -1 to 1
+Checked 506067 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 100 sideloaded reals -1000 to 1000
+Checked 87 Bars. Bar popls: 1 to 1 Bar Order is clean
+
+:: 10000 sideloaded reals -1000 to 1000
+Checked 5773 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 sideloaded reals -1000 to 1000
+Checked 331430 Bars. (dscnd) Bar popls: 2 to 3 Bar Order is clean
+
+:: 100 midspiked reals with duplicates -200 to 200
+Checked 34 Bars. Bar popls: 2 to 3 Bar Order is clean
+
+:: 10000 midspiked reals with duplicates -200 to 200
+Checked 4648 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 midspiked reals with duplicates -200 to 200
+Checked 455875 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 100 descending ints
+Checked 48 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 10000 descending ints
+Checked 4492 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 descending ints
+Checked 536637 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 100 descending ints with maveric vals
+Checked 45 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 10000 descending ints with maveric vals
+Checked 5086 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 descending ints with maveric vals
+Checked 480571 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 100 ascending ints
+Checked 71 Bars. Bar popls: 1 to 2 Bar Order is clean
+
+:: 10000 ascending ints
+Checked 5937 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean
+
+:: 1000000 ascending ints
+Checked 404129 Bars. (dscnd) Bar popls: 1 to 2 Bar Order is clean

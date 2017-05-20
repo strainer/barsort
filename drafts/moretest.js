@@ -9,20 +9,25 @@ testbatch()
 
 function testbatch(){
   
+  barchecking=false
+  barchecking=true
   detail_missbars=false
-  secure_barindex=false
+  secure_barindex=true//false
   bar_resolution=2
   sub_range=true
   
-  sortchecking=true
-  barchecking=false
+  sortbenching=false//true
+  sortchecking=false//true
+  sortcheckout=false//true
   nopresort=false
-  //~ nopostsort=false
-  nopostsort=true
+  nopostsort=false
+  //~ nopostsort=true
   
   var tloops=10000
   var tlens=[10,100,1000,10000]
-  var tlens=[1000000]
+  var tlens=[50,200,5000,100000]
+  var tlens=[100,10000,1000000]
+  //~ var tlens=[1000000]
   
   var dists=[
     { desc:"equally distributed reals from -20 to 20",
@@ -70,7 +75,8 @@ function testbatch(){
       var tlen=tlens[ttin]
       
       var otx="\n:: "+tlen+" "+desc
-        
+      if(barchecking||(sortbenching&&!sortchecking)){ conlog(otx) }
+      
       var loops=Math.floor(tloops/tlen)+1
       loops=1
       
@@ -117,9 +123,34 @@ function testbatch(){
           rslt=rslt.txt
           sortchecks++
          
-          if(!rslt){ conlog(otx+" passed") }
-          else{ conlog(otx+ " Issues:"); conlog(rslt) }
+          if(!rslt){ conlog(otx+" - passed sortchecks") }
+          else{ conlog(otx+ " - with issues:"); conlog(rslt) }
 
+        }
+        
+        if(sortbenching){
+          
+          benit({
+            dat:tzA
+           ,fnc:function(){ return Barsort.fullindex(tzA,[],nopresort,nopostsort) }
+           ,nam:'fullindex'
+           ,itr:1
+          })
+          
+          benit({
+            dat:tzA
+           ,fnc:function(){ return Barsort.stndindex(tzA) }
+           ,nam:'stndindex'
+           ,itr:1
+          })
+          
+          benit({
+            dat:tzA
+           ,fnc:function(){ return Timsort.sort(tzA.slice()) }
+           ,nam:'timsort  '
+           ,itr:1
+          })
+          
         } 
       }
     }

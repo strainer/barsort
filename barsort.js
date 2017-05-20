@@ -193,7 +193,7 @@ var Barsortfactory = function(){ return (function(){
     
     if(!skiptry){ //try insertsort
       Ax =Ax||ixArray(Av)
-      var srslt, trys=1, tryt=2, bx=0
+      var srslt, trys=1, tryt=4, bx=0
 
       while ( (srslt=insertndx(Av,Ax,tryt,bx)).bk < Ax.length){
         if(srslt.du<Ax.length*(trys/5)) break
@@ -267,7 +267,7 @@ var Barsortfactory = function(){ return (function(){
     }
   
     if((!skipfix)&&inbreak>=inslimit){ 
-      console.log("falledback")
+      //~ console.log("falledback")
       stndindex(Av,Ax) 
     }
     //~ else{console.log(inbreak,":brks<lim:",inslimit)}
@@ -302,7 +302,7 @@ var Barsortfactory = function(){ return (function(){
   function insertndx(Av,Ax,limlim,s){ 
     if(s===undefined) s=1
     //~ console.log("starting:",s)
-    var lim=0, limlim=(limlim||20)*Ax.length
+    var lim=0, limlim=(limlim||20)*Ax.length+50
     
     for(var e=Ax.length ,dueway=s ;dueway<e; dueway++){
       var pickx = Ax[dueway],pickv=Av[pickx]

@@ -53,12 +53,11 @@ bench = function (mthd, bentime, mthd_legend, mthd_arg) {
   
   var roughtmrep=ctm/treps
   var duereps=Math.floor(bentime/roughtmrep)
-  if(duereps<2){ 
-    console.log(mthd_legend+" "+(treps/ctm).toFixed(4)+" func/s "+
-      "  avg : "+tallyret/tallyfrq)
-    return
-  }
   
+  if(duereps<2){ 
+    ops=treps/(ctm*1000000)
+  }else{
+    
   var batches=Math.floor(Math.log(duereps)+0.5)
   if(batches>10){ batches=10 }
   
@@ -109,15 +108,24 @@ bench = function (mthd, bentime, mthd_legend, mthd_arg) {
     for(var i=edge+1;i<eb-edge;i++){
       sume+=bults[i]*bults[i]
     }
-    ops=(Math.sqrt(sume/((eb-edge*2-1)))/1000).toFixed(4)
+    ops=(Math.sqrt(sume/((eb-edge*2-1)))/1000)
   }else{
     var rms=Math.sqrt(mopsigma/mopsfrq)
-    ops=(rms/1000).toFixed(4)
+    ops=(rms/1000)
   }
-  
-  console.log(mthd_legend+" "+ops+" Mfunc/s "+
-    "  avg : "+tallyret/tallyfrq)
 
+  }//duereps>1
+  
+  var funits=" Mfunc/s "
+  if(ops<0.01){ ops*=1000000,funits=" func/s " } 
+  ops=ops.toFixed(4)
+  
+  var zzout=mthd_legend+" "+ops+funits
+  
+  if(tallyret/tallyfrq){ zzout+="  avg : "+(tallyret/tallyfrq).toFixed(10) } 
+  console.log(zzout)
+    
+  return
 }
 
 var firstrun=1
