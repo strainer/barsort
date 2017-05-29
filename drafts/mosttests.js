@@ -1,9 +1,12 @@
 require ('../dlib/mutil.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
 Barsort=require('../barsort.js')
+//~ Barsort=require('../barsort_fsta.js')
+//~ Barsort=require('../barsort2.js')
 Timsort=require('O:/hub/lead/node-timsort/build/timsort.min.js')
 
-Fdrandom.repot("1")
+Fdrandom.repot("2")
+//~ Fdrandom=Fdrandom.hot()
 
 testbatch()
 
@@ -16,40 +19,78 @@ function testbatch(){
   bar_resolution=2
   sub_range=true
   
-  sortbenching=true//false//true
-  sortchecking=false//true
-  sortcheckout=false//true
-  nopresort=false
-  nopostsort=false
-  //~ nopostsort=true
+  sortchecking=true
+  flawcheck=false//true//false
+
+  benchsecs    =1
+  sortbenching =true
+  stndbench    =true
+  sortobench   =true
+  resortbench  =true
+  fasortbench  =false
+  timsortbench =true
+
+  nopresort =false//true//false
+  nopostsort=false//true//false
   
-  var tloops=10000
+  descen=false//true
+
+  if(sortbenching){
+    console.log("Benchmarking "+benchsecs+" seconds each function")
+  } 
+  if(sortchecking){
+    conlog("Checking sort functions")	
+  }
+  
+  if(sortbenching||sortchecking){
+    if(nopresort){ conlog(" No quickiesorting ") }
+    if(nopostsort){ conlog(" No suresorting ") }
+    if(descen){ conlog(" Descending order") }
+  }
+  
+  var tloops=1
   var tlens=[10,100,1000,10000]
-  var tlens=[50,200,5000,100000]
-  var tlens=[100,10000,1000000,5000000]
+  var tlens=[50,200,450,850,1250,2000,3000,5000,7500,10000,25000,100000,500000,2000000]
+  var tlens=[0,1,2,3,4,6,10,14,18,25,40,80,150,250,500]
+  var tlens=[3,5,9,12,16,25,36,60,120,250,500,1000,2000,5000,10000,25000,100000,500000,2000000]
+  //~ var tlens=[50,200,600,1250,3000,7500,25000,100000,500000]
+  //~ var tlens=[10000]
+  //~ var tlens=[25000,100000,500000,5000000]
+
+  //~ var tlens=[100,10000,1000000,5000000]
   //~ var tlens=[1000000]
+  //~ var tlens=[2,3,5,8,12,14,16,20,25,30,36,42,50]
   
   var dists=[
+    { desc:"warmup equally distributed reals from -20 to 20",
+      func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( 1000,function(){ return Fdrandom.range(-20,20)} ) ,len ) } }
+    ,
     { desc:"equally distributed reals from -20 to 20",
-      func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( 10,function(){ return Fdrandom.range(-20,20)} ) ,len ) } }
-    
-   ,{ desc:"huge magnitude with gaps and duplicates",
-      func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(len/100+10)),function(){ var g=Fdrandom.range(0,5000000); return Fdrandom.range(-20,20)*g*g*g} ,len ) } }
-
+      func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.range(-20,20)} )  } }
+    ,
+    { desc:"huge magnitude with gaps and duplicates",
+      func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(len/30+10)),function(){ var g=Fdrandom.range(0,5000000); return Fdrandom.range(-20,20)*g*g*g} ,len ) } }
+   ,
    ,{ desc:"gaussian distribution -1 to 1",
       func:function(len){ return Fdrandom.bulk( tlen,function(){ return Fdrandom.gaus()}  ,len ) } } 
-    
-   ,{ desc:"sideloaded reals -1000 to 1000",
+   , 
+   { desc:"sideloaded reals -1000 to 1000",
       func:function(len){ return Fdrandom.bulk( tlen,function(){ return Fdrandom.gbowl()*1000}  ,len ) } }
-        
-   ,{ desc:"midspiked reals with duplicates -200 to 200",
+    , 
+    { desc:"midspiked reals with duplicates -200 to 200",
     func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(1+len/3),function(){ return Fdrandom.gspire(-200,200)}) ,len ) } }
-  
- ,{ desc:"descending ints",
+ ,
+
+ { desc:"descending ints",
     func:function(len){ var ll=len; return Fdrandom.bulk( len,function(){ return --ll} ) }}
 
- ,{ desc:"descending ints with maveric vals",
+ ,
+ { desc:"descending ints with maveric vals",
     func:function(len){ var ll=len; return Fdrandom.bulk( len,function(){ return --ll+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit()*Fdrandom.rbit() )} ) }}
+
+ ,
+ { desc:"ascending ints with maveric vals",
+    func:function(len){ var ll=0; return Fdrandom.bulk( len,function(){ return (ll++)+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit() )} ) }}
 
  ,{ desc:"ascending ints",
     func:function(len){ var ll=0; return Fdrandom.bulk( len,function(){ return ll++} ) }}
@@ -98,7 +139,7 @@ function testbatch(){
           var resol= Math.floor(Fdrandom.gnorm(2,10))
           var odesc = Fdrandom.rbit()
           
-          Barsort.barindex ({
+          Barsort.barassign ({
            barnum: barnm
           ,scores: tzA
           ,st:st  ,ov:ov
@@ -116,39 +157,60 @@ function testbatch(){
         }
       
         if(sortchecking){
-          var nim=Barsort.fullindex(tzA,[],nopresort,nopostsort)
+          var nim=Barsort.sortorder(tzA,descen,[],nopresort,nopostsort)
           
-          rslt=sortcheck(tzA,nim,nopresort)
+          //~ nim[1000]=10 //check 1 disordered key
+          if(flawcheck){ nim[2]=5 } 
+          rslt=sortcheck(tzA,nim,nopresort,descen)
           sortissues+=rslt.iss
           rslt=rslt.txt
           sortchecks++
          
           if(!rslt){ conlog(otx+" - passed sortchecks") }
+          //~ if(!rslt){ conlog(otx+" - passed sortchecks"+descen?"descending":"") }
           else{ conlog(otx+ " - with issues:"); conlog(rslt) }
 
         }
         
         if(sortbenching){
+          compar=(descen)?morethan:lessthan
           
-          benit({
+          if(stndbench) benit({
             dat:tzA
-           ,fnc:function(){ return Barsort.fullindex(tzA,[],nopresort,nopostsort) }
-           ,nam:'fullindex'
-           ,itr:1
-          })
-          
-          benit({
-            dat:tzA
-           ,fnc:function(){ return Barsort.stndindex(tzA) }
+           ,fnc:function(){ return Barsort.stndindex(tzA,descen) }
            ,nam:'stndindex'
-           ,itr:1
+           ,tim:benchsecs
           })
           
-          benit({
+          
+          if(sortobench) benit({
             dat:tzA
-           ,fnc:function(){ return Timsort.sort(tzA.slice(),function(a,b){return a-b} ) }
+           ,fnc:function(){ return Barsort.sortorder(tzA,descen,[],nopresort,nopostsort) }
+           ,nam:'sortorder'
+           ,tim:benchsecs
+          }) 
+                    
+          if(resortbench) benit({
+            dat:tzA
+           ,fnc:function(){ 
+             return Barsort.reorder(tzA,Barsort.sortorder(tzA,descen,[],nopresort,nopostsort))
+             }
+           ,nam:'reorder  '
+           ,tim:benchsecs
+          }) 
+
+          if(fasortbench) benit({
+            dat:tzA
+           ,fnc:function(){ return Barsort.sortorder(tzA,descen,[],nopresort,true) }
+           ,nam:'sortarder'
+           ,tim:benchsecs
+          }) 
+                              
+          if(timsortbench) benit({
+            dat:tzA
+           ,fnc:function(){ return Timsort.sort(tzA.slice(),compar ) }
            ,nam:'timsort  '
-           ,itr:1
+           ,tim:benchsecs
           })
           
         } 
@@ -160,6 +222,10 @@ function testbatch(){
   }
 }
 
+var compar
+function lessthan(a,b){ return a-b }
+function morethan(a,b){ return b-a }
+
 
 function dmpbarval(ado,barix ){
   var oo=[]
@@ -170,7 +236,7 @@ function dmpbarval(ado,barix ){
 }
 
 //~ outbydex(ado,barx)
-//~ outbybar(ado,barix,barindex )
+//~ outbybar(ado,barix,barassign )
 
 function barcheck(valz,brvl,brfq,barnm,odesc,st,ov){
   
@@ -228,7 +294,7 @@ function barcheck(valz,brvl,brfq,barnm,odesc,st,ov){
 }
 
 
-function sortcheck(valz,sdic,nopre,odesc,st,ov){ //desc,st,ov not implemented
+function sortcheck(valz,sdic,nopre,odesc,st,ov){ //st,ov not implemented
 
   var printlim=0
   
@@ -238,7 +304,7 @@ function sortcheck(valz,sdic,nopre,odesc,st,ov){ //desc,st,ov not implemented
 
   var otxt="Checked "+odesc?"descnd.":""+" order."+nopre?" (nopre) ":""
   
-  var chex=Barsort.stndindex(valz)
+  var chex=Barsort.stndindex(valz,odesc)
   
   var ern=0,ersu=0, cch=-1,dch=-1, maxmis=0,miz
   
@@ -249,18 +315,11 @@ function sortcheck(valz,sdic,nopre,odesc,st,ov){ //desc,st,ov not implemented
     
     var ook=sdic[ord] //outoforderkey  original order initaddresskey 
     var vook=valz[ook]
-    //if(st=<oook<ov) then checkit
+    
+    if(!((ook>0||ook===0)&&(ook<e))){ ern++,ersu+=e }
       
     var cxord=ord, dford=0
-    //~ conlog(vook,valz[chex[cxord]])
-
-    //~ if(sdic[cxord]!=chex[cxord]){
-      //~ if(printlim++<50){
-        //~ conlog(sdic[cxord],valz[sdic[cxord]])
-        //~ tot++
-      //~ }
-    //~ } 
-
+    
     while(cxord<e&&vook>valz[chex[cxord]]){ //search cxord+++
       //skip dupes
       while(valz[chex[cxord]]===valz[chex[cxord+1]]){ cxord++ }
@@ -328,23 +387,23 @@ console.log("speedtests",real_rg.length)
 
 //~ benit({
   //~ dat:real_rg
- //~ ,fnc:function(x){ Barsort.barindex (x) }
+ //~ ,fnc:function(x){ Barsort.barassign (x) }
  //~ ,nam:'js sort'
- //~ ,itr:8
+ //~ ,tim:8
 //~ })
 
 benit({
   dat:real_rg
  ,fnc:function(x){ Barsort.stndindex(x) }
  ,nam:'stndindex'
- ,itr:8
+ ,tim:8
 })
 
 benit({
   dat:real_rg
- ,fnc:function(x){ Barsort.fullindex(x) }
+ ,fnc:function(x){ Barsort.sortorder(x) }
  ,nam:'barsort'
- ,itr:8
+ ,tim:8
 })
 
 
@@ -352,7 +411,7 @@ benit({
   dat:real_rg
  ,fnc:function(x){ Barsort.stndindex(x) }
  ,nam:'stndindex'
- ,itr:8
+ ,tim:8
 })
 
 }
@@ -368,7 +427,7 @@ function benit(p){
       for(var i=0;i<tsa.length;i++){ r[i]=tsa[ii=(ii<le)?ii+1:0] }
       p.fnc(r)
     }
-    ,p.itr
+    ,p.tim
     ,p.nam, 0
   ) 
 }

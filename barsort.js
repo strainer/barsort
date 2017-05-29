@@ -7,26 +7,28 @@
 var Barsortfactory = function(){ return (function(){ 
   'use strict'
 
-  function version(){ return "0.8.0" }
+  function version(){ return "0.9.0" }
 
 
-  var _cntofsub=[],_destrema=[],_destosub=[]
-  var wkcnt=0,wkcyc=100 //these count use of arrays
+  var _cntofsub=[],_destrema=[],_destosub=[] //these arrays reused between calls
+  var wkcnt=0,wkcyc=100 //these count use of workspace arrays
 
 
-  function barindex(pr){ //barnum:,scores:,st:,ov:,keysbar:,barfreq:,burnscore:
+  function barassign(pr){ //barnum:,scores:,st:,ov:,keysbar:,barfreq:,burnscore:
     
-    var scores = pr.scores
+    var scores,pscores = pr.scores
        ,st     = pr.st||0 
-       ,ov     = pr.ov||scores.length
+       ,ov     = pr.ov||pscores.length
        ,barnm  = pr.barnum
        ,resol  = pr.resolution||5  //over sample x5
        ,kysbar = pr.keysbar        //bari into kysbar[st..ov]
        ,barppl = pr.barppl
   
     if(pr.secure){
-      var ixkeys=stndindex(scores)  //unoptimal without st,ov
+      var ixkeys=sortorder(pscores,[],0,0,pr.descend)  //unoptimal without st,ov
                                 //this should leave original scores untouched
+      if(pr.ordinate) return ixkeys
+      
       var barsiz=(ov-st)/barnm, dubar=0, barppl=barppl||[]
       for(var i=0;i<barnm;i++){ barppl[i]=0 }
       for(var c=0,e=ixkeys.length;c<e;c++){
@@ -37,36 +39,33 @@ var Barsortfactory = function(){ return (function(){
         } 
       } 
       return
-    }else{
-      if(!pr.burnscore){  //clone score
-        scores=[]
-        for(var i=st; i<ov; i++){
-          scores[i]=pr.scores[i]  //eventually slice this and offset ix for reads
-        }
-      }
     }
+    
+    if(!pr.burnscore){  //clone score
+      scores=new Array(pscores.length)
+    }else{ scores=pscores }
     
     var smnm=0, qvl=-0 ,nb=ov-st
     
-    var minv=scores[st] ,maxv=minv ,minv2=minv ,maxv2=minv 
+    var minv=pscores[st] ,maxv=minv ,minv2=minv ,maxv2=minv 
     var lowex=-281474976710656 //-2^48
 
     var delt=0,delt2=0,mean=0,me2=0 
     
     for(var i=st; i<ov; i++) //need to max,min 
     { 
-      if(!(scores[i]>lowex)){ scores[i]=lowex }  //but score should not be NaN!
-      qvl=scores[i]||0 
+      if(!(pscores[i]>lowex)){ pscores[i]=lowex }  //but score should not be NaN!
+      qvl=pscores[i]||0 
       
       if (qvl>maxv){ if (qvl>maxv2){ maxv=maxv2, maxv2=qvl }else{ maxv=qvl } 
       }else if (qvl<minv){ if (qvl<minv2){ minv=minv2, minv2=qvl }else{ minv=qvl } }
           
       //variance.. welfords alg
       smnm++	
-      delt = qvl - mean
+      delt  = qvl - mean
       mean += delt/smnm
       delt2 = qvl - mean
-      me2 += delt*delt2	
+      me2  += delt*delt2	
 
     }
     
@@ -85,17 +84,16 @@ var Barsortfactory = function(){ return (function(){
     if(pr.descend){
       //~ console.log("minmax",miny,maxy)
       for(var i=st; i<ov; i++) 
-      { qvl= maxy-scores[i] 
-        qvl=Math.floor(qun*qvl+1)
+      { qvl=Math.floor(qun*(maxy-pscores[i]))
         //~ console.log(qvl)
         scores[i]=qvl<0? 0:qvl>subdvn? subdvn:qvl
         //~ console.log(scores[i])
       }
     }else{
       for(var i=st; i<ov; i++) 
-      { qvl= scores[i]-miny 
-        qvl=Math.floor(qun*qvl+1)
-        scores[i]=qvl<0? 0:qvl>subdvn? subdvn:qvl
+      { 
+        qvl=qun*(pscores[i]-miny )
+        scores[i]=qvl<0? 0: qvl>subdvn? subdvn: qvl>>>0
       }
     }
     
@@ -105,7 +103,7 @@ var Barsortfactory = function(){ return (function(){
     //recycle these temp arrays
     //var _cntofsub=new Array(subdvn), _destosub=new Array(subdvn)
     
-    if( _cntofsub.length<subdvn 
+    if( true || _cntofsub.length<subdvn 
      ||( wkcnt++>wkcyc && _cntofsub.length>subdvn) ){
       _cntofsub = new Array(subdvn) 
       _destosub = new Array(subdvn)
@@ -137,7 +135,8 @@ var Barsortfactory = function(){ return (function(){
         _destrema[fllbar]=fcap
         fllbar++
         nxtcap+=rlbar-fcap
-        fcap=Math.floor(nxtcap)
+        //~ fcap=Math.floor(nxtcap)
+        fcap=nxtcap >>>0
         //~ if(fllbar-fldbar>1){ spills.push(fldbar); fldbar++ }
       }
       //~ fldbar=fllbar
@@ -149,23 +148,40 @@ var Barsortfactory = function(){ return (function(){
     //_destrema is parallel to barppl
     //_destrema must empty but barppl wants returned
     //ceil of _destrema is complicated here by dvrems fraction..
-    if(barppl) //clone to this array if it was supplied
-    { for(var i=0;i<barnm;i++){ barppl[i]=_destrema[i] } }
     
-    for(var i=st; i<ov; i++){ 
-      var subposi=scores[i]
-      
-      while(_destrema[_destosub[subposi]]<1){ 
+    if(pr.ordinate){  //write ordinals into kysbar instead of bars
+      var bapos=[0]   //barAnchorPositions
+      for(var i=0;i<barnm-1;i++){ bapos[i+1]=bapos[i]+_destrema[i] }
+    
+      for(var i=st; i<ov; i++){ //not st ov capable
+        var subposi=scores[i]
+        
+        while(_destrema[_destosub[subposi]]===0){ 
+          //_destrema[_destosub[subposi]]--
+          _destosub[subposi]++ 
+        }
         _destrema[_destosub[subposi]]--
-        _destosub[subposi]++ 
+        kysbar[bapos[_destosub[subposi]]++ ]=i  //i know its crazy, but its true
       }
-      _destrema[_destosub[subposi]]--
-      kysbar[i]=_destosub[subposi] /// /// /// business line
+    }else{ 
+      if(barppl) //this array is used by an external callee
+      { for(var i=0;i<barnm;i++){ barppl[i]=_destrema[i] } }
+
+      for(var i=st; i<ov; i++){ 
+        var subposi=scores[i]
+        
+        while(_destrema[_destosub[subposi]]===0){ 
+          //~ _destrema[_destosub[subposi]]--
+          _destosub[subposi]++ 
+        }
+        _destrema[_destosub[subposi]]--
+        kysbar[i]=_destosub[subposi] /// /// /// business line
+        
+      }
     }
     
-    return _destrema 
+    return _destrema //this was used for checking but is not used now
   }
-  
   
   
   function barstoix(Ax,bfill,st,ov){
@@ -184,188 +200,302 @@ var Barsortfactory = function(){ return (function(){
     for(var i=0,e=ov-st; i<e; i++){
       Ax[st+bfill[ind[i]]++ ]=i+st
     }
-
+    
     return Ax
   }
     
+  function fliparray(A){
+    for(var e=A.length-1,i=(e+1)>>>1,sw=A[i]; i<=e; i++){
+      sw=A[i], A[i]=A[e-i], A[e-i]=sw
+    }
+    return A
+  }
+    
+  var compar
+  function lessthan(a,b){ return a<b }
+  function morethan(a,b){ return a>b }
   
-  function fullindex(Av,Ax,skiptry,skipfix){
+  function sortorder(Av,desc,Ax,skiptry,skipfix){
+    //conlog("doing sortorder",desc)
+    
+    var flipp=false, Alen=Av.length
+    if((!skiptry)&&Alen>10){
+      
+      var up=0,dw=0, samp=ntain(Alen>>>3,8,Alen)
+            
+      var dd,bb=dd=Av[0],nc=Math.ceil(Alen/(samp*20))+0.8
+      for(var j=1; j<samp; j+=nc){ //fast gamble on intro sample
+        bb=dd,dd=Av[j]
+        if(dd<bb){ up++,j-- }
+        if(dd>bb){ dw++,j-- }
+      }
+
+      var upness=(up-dw)/samp
+
+      if(desc) upness=-upness
+      
+      var threshup=0.3 //1 maxout -1 neg-out
+      if(upness>threshup){ flipp=true; }
+      if((Alen>100)&&(up*3>samp)&&(dw*3>samp)) skiptry=true
+    }
+    
+    if( !(Ax&&Ax.length>=Av.length) ){ Ax = ixArray(Av,flipp) }
+    
+    if(desc) { compar=lessthan } else { compar=morethan }
+    var st=0
     
     if(!skiptry){ //try insertsort
-      Ax =Ax||ixArray(Av)
-      var srslt, trys=1, tryt=4, bx=0
+      //~ conlog("tryin")
+      var sresult, trys=1, stint=1
 
-      while ( (srslt=insertndx(Av,Ax,tryt,bx)).bk < Ax.length){
-        if(srslt.du<Ax.length*(trys/5)) break
-        bx=srslt.du,trys++
-      }
-      if(srslt.bk===Av.length){ return Ax }
-    }else{
-      Ax=Ax||new Array(Av.length)
-    }
-
-    var barlen=16, reso=8
-    var bars=Math.ceil(Av.length/barlen)+1 
-    var barppl=new Array(bars)
-    
-    //~ console.log("Barlen:",barlen,"reso:",reso)
-      
-    var rgallocs=barindex({
-      barnum: bars
-     ,scores: Av     //will be copied if no burnscore:true
-     //~ ,st:,ov:
-     ,keysbar:Ax
-     ,barppl:barppl 
-     ,savscore:1
-     ,resolution:reso
-     ,secure:false
-     //~ ,secure:true
-    })
-            
-    Ax=barstoix(Ax,barppl) //barppl gets 'integralled' here
-    //~ inslim=16
-    var st=0,ov=0, revs=1, srslt
-    var inbreak=64, inslimit=skipfix?72:96
-    
-    if(skipfix) return Ax
-    
-    while(inbreak++<inslimit && (srslt=insertndx(Av,Ax,inbreak>>>4,st)).bk<Ax.length){ 
-      
-      //~ console.log("inbroke, bak:",srslt.bk,"to:",srslt.du)
-      var cmbspan=Math.floor((srslt.du-srslt.bk)*1.5)
-        , maxspan=Math.floor(Ax.length*0.01)+1000
-
-      st=srslt.du-cmbspan ,ov=srslt.du+cmbspan*2
-      
-      st=ctain(st,0,Ax.length) ,ov=ctain(ov,0,Ax.length)
-      
-      var aswps,sswps
-      aswps =strafe(Av,Ax,st,ov,Math.floor((ov-st)*0.6)) 
-      aswps+=strafe(Av,Ax,st,ov,Math.floor((ov-st)*0.3)) 
-      sswps=aswps*=0.4
-      
-      //~ console.log("swaps there:",aswps,"(",st,"to",ov,")")
-      
-      if(aswps>0.1){
-        do{
-          cmbspan=Math.floor(cmbspan*1.45), 
-          st=srslt.du-cmbspan ,ov=srslt.du+cmbspan*2
-          st=ctain(st,0,Ax.length) ,ov=ctain(ov,0,Ax.length)
-          
-          aswps=sswps*0.9
-          sswps=strafe(Av,Ax,st,ov)
-          //~ console.log("scanning:",ov-st,"swaps:",sswps)
-         
-        }while( sswps>aswps*0.8 && cmbspan<maxspan)
-        
-        if(sswps){
-          var rr=combubble(Av,Ax,st,ov)
-          //~ console.log("fullcombed:",st,"to",ov,"(ttl:",ov-st)
-          //~ console.log("scored:",rr,"lowvs:",Av[Ax[0]],Av[Ax[1]])
+      while ( (sresult=insertndx(Av,Ax,stint,st)).bk < Ax.length){
+        if((sresult.du)<(Ax.length*trys/15)) {
+          //~ console.log("pre-ins bust trying",st,sresult.du)
+          break 
         }
-      } 
+        st=sresult.du,trys++
+        stint*=1.1
+      }
+      
+      if(sresult.bk===Av.length){ 
+        //~ console.log("solved early")
+        return Ax 
+      }
+    }
+ 
+    if(st<Av.length*0.14) //made poor progress before
+    { 
+      //~ conlog("barsorted")
+      var barlen=7, reso=2 //these values mined, mebbie 16/4 or other better?
+      var bars=Math.ceil(Av.length/barlen)+1 
+      //~ var barppl=new Array(bars)
+      Ax=Ax||new Array(Av.length)
+      //~ console.log("Barlen:",barlen,"reso:",reso)
+        
+      var rgallocs=barassign({
+        barnum: bars
+       ,scores: Av     //will be copied if no burnscore:true
+       ,keysbar:Ax
+       //~ ,barppl:barppl  //comment this out 
+       ,savscore:1
+       ,resolution:reso
+       ,descend:desc
+       ,secure:false
+       ,ordinate:true
+      })
+            
+    }else if( !(Ax&&Ax.length>=Av.length) ){ Ax = ixArray(Av,flipp) }
+    
+    if(skipfix){ return Ax }
+    
+    var bst=0,st=0,ov=0, sresult
+    
+    var fixcnt=0, fixlim=200
+    
+    //~ var cfg=0.1 
+    //~ var cfg=0.5 
+    var cfg=1 
+    var maxstint=3*cfg, stint=1*cfg, minstint=0.3*cfg
+    var bdu=0
+    
+    //~ var mkforward=50
+    var mkforward=0.3
+    
+    while((sresult=insertndx(Av,Ax,stint,st)).bk < Ax.length){ 
+      //~ console.log(stint)
+      var throwback = sresult.du - sresult.bk
+      var forward   = sresult.du - bdu ,bdu=sresult.du
+      
+      var okforward = 40000*stint
+      
+      if(forward>okforward){  //it seems to have made good progress 
+        //~ conlog("cont: fo -kn  try      ",forward,"-"+throwback,stint.toFixed(4)) 
+
+        if(throwback<40) {    //and throwback was not bad
+          stint=(stint*2+maxstint)/3   //increase stint 
+          if(throwback<20){ stint=(stint*2+maxstint)/3 }
+          //~ conlog("continues")
+          /// /////////////////////
+          continue }//else{ stint=(stint*2+minstint)/3 } 
+        throwback*=0.5       //suppose it was less as progress was good
+      }else{
+        //~ conlog("badd: fo -kn  try      ",forward,"-"+throwback,stint.toFixed(4))
+      }
+      
+      var tuneo=30,tunep=2
+      var cmbspan=Math.floor(tuneo+ (sresult.du-sresult.bk)*tunep )
+         ,maxspan=Math.floor(Ax.length*0.01)+1000
+
+      st=sresult.du-cmbspan    ,ov=sresult.du+cmbspan*2
+      st=ntain(st,0,Ax.length) ,ov=ntain(ov,0,Ax.length)
+      
+      var swps, bswps, jj=Math.floor((ov-st)*0.3)
+      
+      swps =combubble(Av,Ax,st,ov,jj,jj) ; jj=jj>>>1
+      
+      if( throwback<forward*mkforward ) {  //catch small ok throwbacks
+        fixcnt++
+        //do a light comb
+        swps+=combubble(Av,Ax,st,ntain(ov+cmbspan,0,Ax.length),jj,jj) 
+        bswps=swps
+        
+        /// /////////////////////
+        //~ conlog("swps: fo -kn  try  swps",forward,"-"+throwback,stint.toFixed(4),swps.toFixed(4))
+
+        //reduce stint
+        stint=(stint*2+minstint)/3 //decrease tryspeed
+        
+        var tunev=0.4
+        if(swps<tunev/(10+throwback)){ 
+          //~ conlog("conto",swps); 
+          continue }
+        //~ else{ conlog("contn",swps); }
+      }
+      
+      stint=(stint+minstint*2)/3
+      
+      do{
+        fixcnt++
+        cmbspan=Math.floor(cmbspan*1.5), 
+        st=sresult.du-cmbspan ,ov=sresult.du+cmbspan*2
+        st=ntain(st,0,Ax.length) ,ov=ntain(ov,0,Ax.length)
+        
+        bswps=swps*0.9 ; jj=Math.floor((ov-st)*0.5)
+        swps=combubble(Av,Ax,st,ov,jj,jj)
+        
+        /// /////////////////////
+        //~ conlog("comb: fo -kn  try  swps",forward,"-"+throwback,stint.toFixed(4),swps.toFixed(4))
+        //~ console.log("scanning:",ov-st,"swaps:",sswps)
+       
+      }while( swps>bswps*0.8 && cmbspan<maxspan)
+      
+      if(swps){
+        var rr=combubble(Av,Ax,st,ov)
+        /// /////////////////////
+        //~ console.log("fullcombed:",st,"to",ov,"(ttl:",ov-st)
+        //~ console.log("scored:",rr,"lowvs:",Av[Ax[0]],Av[Ax[1]])
+      }
+    
+      if(fixcnt>fixlim){ break } 
     }
   
-    if((!skipfix)&&inbreak>=inslimit){ 
+    if((!skipfix)&&fixcnt>=fixlim){ 
       //~ console.log("falledback")
-      stndindex(Av,Ax) 
+      stndindex(Av,desc,Ax) 
     }
-    //~ else{console.log(inbreak,":brks<lim:",inslimit)}
+    //~ else{console.log(fixcnt,":brks<lim:",fixlim)}
+    //~ console.log("gup")
     
     return Ax
+ 
   }
 
-  function ctain(a,b,c){
+  
+  function ntain(a,b,c){ //contain a by b and c
     if(a<b) return b
     if(a>c) return c
     return a
   }
   
-  function stndindex(Ai,Ax){
+  
+  function stndindex(Ai,desc,Ax){
     
     if(!Ax||Ax.length<Ai.length){
       Ax=new Array(Ai.length)
       for (var i=0,e=Ai.length; i<e; i++) Ax[i] = i
     }
     
-    Ax.sort( function (a, b) { return Ai[a] - Ai[b] } )
-    
+    if(desc){
+      Ax.sort( function (b, a) { return Ai[a] - Ai[b] } )
+    }else{
+      Ax.sort( function (a, b) { return Ai[a] - Ai[b] } )
+    }
     return Ax
   }
 
-  function ixArray(A){
+
+  function ixArray(A,flipp){
     var Ar=new Array(A.length)
-    for(var c=0,e=Ar.length; c<e; c++){ Ar[c]=c}
+    if(flipp){
+      for(var c=0,e=Ar.length,d=e; c<e; c++){ Ar[c]=--d}
+    }else{
+      for(var c=0,e=Ar.length; c<e; c++){ Ar[c]=c} 
+    }
+    
     return Ar
   }
     
-  function insertndx(Av,Ax,limlim,s){ 
+    
+  function insertndx(Av,Ax,giveover,s){ 
+    
     if(s===undefined) s=1
-    //~ console.log("starting:",s)
-    var lim=0, limlim=(limlim||20)*Ax.length+50
+    var moved=0, giveover=Math.floor((giveover||20)*Ax.length+10)
+    //~ console.log("starting:",s,giveover)
     
     for(var e=Ax.length ,dueway=s ;dueway<e; dueway++){
       var pickx = Ax[dueway],pickv=Av[pickx]
       var bacway =dueway-1
-      while( bacway>=0 && Av[Ax[bacway]] > pickv){ //if pre is smaller
+      while( bacway>=0 && compar(Av[Ax[bacway]] , pickv)){ //if pre is smaller
         Ax[bacway+1] = Ax[bacway]              //
-        bacway = bacway - 1
+        bacway--
+        moved++
       }
-      lim+=dueway-bacway
       Ax[bacway+1] = pickx                     //put pickx down
-      if(lim>limlim){ 
+      //~ moved+=dueway-bacway
+      if( moved > giveover){ 
         //~ console.log("insert bail:",dueway-1); 
-        return {bk:bacway,du:dueway} }
+        return {bk:bacway,du:dueway} 
+      }
     }
      
+    //~ console.log("fullinsfin",dueway,e)
     return {bk:dueway,du:dueway}
   }
-   
-  function strafe(Av,Ax,s,e,j){
-    
-    var jmp=j||Math.floor((e-s)*0.5)
-    var t=0,cnt=0 
-       ,jmpb=Math.floor(jmp*0.28)
-       ,jmpc=Math.floor(jmp*0.98)
-    
-    for(var cc=s ,es=e-jmp; cc<es; cc++) //or2
-    { 
-      var cd=cc+jmpb ,ce=cc+jmpc ,jd=cc+jmp 
-      if( Av[Ax[cc]] > Av[Ax[cd]] ){ t=Ax[cc],Ax[cc]=Ax[cd],Ax[cd]=t }
-      if( Av[Ax[cd]] > Av[Ax[ce]] ){ t=Ax[cd],Ax[cd]=Ax[ce],Ax[ce]=t }
-      if( Av[Ax[cc]] > Av[Ax[jd]] ){ t=Ax[cc],Ax[cc]=Ax[jd],Ax[jd]=t,cnt++ }
-    }	
-    return cnt/(e-s)
-    //~ return cnt
-  }
+
      
-  function combubble(Av,Ax,s,e,jmp){
+  function combubble(Av,Ax,s,e,jmp,fin){
     
     var r=0
-    s=s||0,e=e||Av.length 
-    for( jmp=jmp||(e-s)*0.66667 ;jmp>70; jmp=jmp*0.6667){
+    s=s||0 ,e=e||Av.length ,fin=fin||70 
+    for( jmp=jmp||(e-s)*0.66667 ; jmp>=fin ; jmp=jmp*0.66667 ){
          
-      var jmpa=Math.floor(jmp)
-         ,jmpb=Math.floor(jmp*0.28)
-         ,jmpc=Math.floor(jmp*0.98),t=0
+      var jmpb=Math.floor(jmp*0.28)
+         ,jmpe=Math.floor(jmp*0.98)
+         ,jmpf=Math.floor(jmp)
+         ,t=0
          
-      for(var cc=s ,es=e-jmpa; cc<es; cc+=1) //or2
+      for(var cc=s ,es=e-jmpf; cc<es; cc+=1)
       { 
-        var cd=cc+jmpb ,ce=cc+jmpc ,jd=cc+jmpa 
-        if( Av[Ax[cc]] > Av[Ax[cd]] ){ t=Ax[cc],Ax[cc]=Ax[cd],Ax[cd]=t }
-        if( Av[Ax[cd]] > Av[Ax[ce]] ){ t=Ax[cd],Ax[cd]=Ax[ce],Ax[ce]=t,r++ }
-        if( Av[Ax[cc]] > Av[Ax[jd]] ){ t=Ax[cc],Ax[cc]=Ax[jd],Ax[jd]=t,r++ }
+        var jd=cc+jmpb ,je=cc+jmpe ,jf=cc+jmpf 
+        if( compar(Av[Ax[cc]] , Av[Ax[jd]]) ){ t=Ax[cc],Ax[cc]=Ax[jd],Ax[jd]=t }
+        if( compar(Av[Ax[jd]] , Av[Ax[je]]) ){ t=Ax[jd],Ax[jd]=Ax[je],Ax[je]=t }
+        if( compar(Av[Ax[cc]] , Av[Ax[jf]]) ){ t=Ax[cc],Ax[cc]=Ax[jf],Ax[jf]=t,r++ }
       }
     
     }
-    return r
+    return r/(e-s)
   } 
     
     
-  return{
-     barindex  : barindex
+  function reorder(Av,Ax){
     
-    ,fullindex : fullindex
+    var Ar=new Array(Av.length)
+    for(var j=0,e=Ax.length;j<e;j++){
+      Ar[j]=Av[Ax[j]]
+    }
+    return Av=Ar
+  }
+
+  function sort(Av,desc){
+    return reorder(Av,sortorder(Av,desc))
+  }
+    
+  return{
+     barassign : barassign 
+    ,sortorder : sortorder
+    ,sort      : sort
+    ,reorder   : reorder
+    
     ,stndindex : stndindex
     ,insertndx : insertndx
     

@@ -1,20 +1,15 @@
 require ('../dlib/mutil.js')
 //~ Fdrandom=require ('../Fdrandom.min.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
-Broad=require('../barsort.js')
-
-//~ var tug=NaN
-var tug=-Infinity
-console.log(tug>2)
+Barsort=require('../barsort.js')
 
 
-console.log(Math.pow(2,48))
-return
-console.log([7,3,4,6].sort())
 
-return
+//~ console.log(Barsort.sortorder([7,3,4,6]))
 
-var tlen=15000000, tdlen=Math.floor(tlen/16), zum=0
+//~ return
+
+var tlen=10000000, tdlen=Math.floor(tlen/16), zum=0
 
 console.log((tlen*8/1000000).toFixed(0),"megabyte test array")
 
@@ -30,6 +25,12 @@ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.gnorm()*1000 } )
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.f48()*1000 } )
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.irange(1,600) } )
 //~ real_rg.push(100000000000)
+
+console.log(Barsort.sort(real_rg,false,[],true,true)[0])
+//~ console.log((real_rg.sort(function(a,b){ return a>b }))[0])
+
+return
+
 Fdrandom.repot("1")
 
   //~ bars  : bars
@@ -179,3 +180,24 @@ function benit(p){
   ) 
 }
 
+/*
+    bar
+   desig
+ 0123456789
+ 0332231100   0123  bars
+              3223  ppls
+              0357  st pos
+              
+ take pos
+ write increm~ord of pos
+ 
+ take pos 0
+ see bar of pos 0  = bar[0]
+ determine increm or of bar  bfill[bar]++
+ 
+ write ord of bar into bar
+ <save info of bar before overwrite
+ 
+ use that info next instead of pos+1
+ will that info always be fresh?
+*/

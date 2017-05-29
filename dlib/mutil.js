@@ -55,8 +55,8 @@ bench = function (mthd, bentime, mthd_legend, mthd_arg) {
   var duereps=Math.floor(bentime/roughtmrep)
   
   if(duereps<2){ 
-    ops=treps/(ctm*1000)
-  }else{
+    ops=treps/(ctm*1000) //;console.log("poot")
+  }else{ //console.log("numa")
     
   var batches=Math.floor(Math.log(duereps)+0.5)
   if(batches>10){ batches=10 }
@@ -117,7 +117,7 @@ bench = function (mthd, bentime, mthd_legend, mthd_arg) {
   }//duereps>1
   
   var funits=" Mfunc/s "
-  if(ops<0.01){ ops*=1000000,funits=" func/s " } 
+  if(ops<1){ ops*=1000000,funits=" func/s " } 
   ops=ops.toFixed(4)
   
   var zzout=mthd_legend+" "+ops+funits
