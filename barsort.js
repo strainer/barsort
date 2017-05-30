@@ -266,7 +266,10 @@ var Barsortfactory = function(){ return (function(){
     if(st<Av.length*0.14) //made poor progress before
     { 
       //~ conlog("barsorted")
-      var barlen=7, reso=2 //these values mined, mebbie 16/4 or other better?
+      //~ var barlen=19, reso=3 //these values mined, mebbie 16/4 or other better?
+      //~ var barlen=22, reso=2 //these values mined, mebbie 16/4 or other better?
+      var barlen=16, reso=2 //these values mined, mebbie 16/4 or other better?
+      //~ var barlen=12, reso=2 //these values mined, mebbie 16/4 or other better?
       var bars=Math.ceil(Av.length/barlen)+1 
       //~ var barppl=new Array(bars)
       Ax=Ax||new Array(Av.length)
@@ -288,105 +291,8 @@ var Barsortfactory = function(){ return (function(){
     
     if(skipfix){ return Ax }
     
-    var bst=0,st=0,ov=0, sresult
-    
-    var fixcnt=0, fixlim=200
-    
-    //~ var cfg=0.1 
-    //~ var cfg=0.5 
-    var cfg=1 
-    var maxstint=3*cfg, stint=1*cfg, minstint=0.3*cfg
-    var bdu=0
-    
-    //~ var mkforward=50
-    var mkforward=0.3
-    
-    while((sresult=insertndx(Av,Ax,stint,st)).bk < Ax.length){ 
-      //~ console.log(stint)
-      var throwback = sresult.du - sresult.bk
-      var forward   = sresult.du - bdu ,bdu=sresult.du
-      
-      var okforward = 40000*stint
-      
-      if(forward>okforward){  //it seems to have made good progress 
-        //~ conlog("cont: fo -kn  try      ",forward,"-"+throwback,stint.toFixed(4)) 
-
-        if(throwback<40) {    //and throwback was not bad
-          stint=(stint*2+maxstint)/3   //increase stint 
-          if(throwback<20){ stint=(stint*2+maxstint)/3 }
-          //~ conlog("continues")
-          /// /////////////////////
-          continue }//else{ stint=(stint*2+minstint)/3 } 
-        throwback*=0.5       //suppose it was less as progress was good
-      }else{
-        //~ conlog("badd: fo -kn  try      ",forward,"-"+throwback,stint.toFixed(4))
-      }
-      
-      var tuneo=30,tunep=2
-      var cmbspan=Math.floor(tuneo+ (sresult.du-sresult.bk)*tunep )
-         ,maxspan=Math.floor(Ax.length*0.01)+1000
-
-      st=sresult.du-cmbspan    ,ov=sresult.du+cmbspan*2
-      st=ntain(st,0,Ax.length) ,ov=ntain(ov,0,Ax.length)
-      
-      var swps, bswps, jj=Math.floor((ov-st)*0.3)
-      
-      swps =combubble(Av,Ax,st,ov,jj,jj) ; jj=jj>>>1
-      
-      if( throwback<forward*mkforward ) {  //catch small ok throwbacks
-        fixcnt++
-        //do a light comb
-        swps+=combubble(Av,Ax,st,ntain(ov+cmbspan,0,Ax.length),jj,jj) 
-        bswps=swps
         
-        /// /////////////////////
-        //~ conlog("swps: fo -kn  try  swps",forward,"-"+throwback,stint.toFixed(4),swps.toFixed(4))
-
-        //reduce stint
-        stint=(stint*2+minstint)/3 //decrease tryspeed
-        
-        var tunev=0.4
-        if(swps<tunev/(10+throwback)){ 
-          //~ conlog("conto",swps); 
-          continue }
-        //~ else{ conlog("contn",swps); }
-      }
-      
-      stint=(stint+minstint*2)/3
-      
-      do{
-        fixcnt++
-        cmbspan=Math.floor(cmbspan*1.5), 
-        st=sresult.du-cmbspan ,ov=sresult.du+cmbspan*2
-        st=ntain(st,0,Ax.length) ,ov=ntain(ov,0,Ax.length)
-        
-        bswps=swps*0.9 ; jj=Math.floor((ov-st)*0.5)
-        swps=combubble(Av,Ax,st,ov,jj,jj)
-        
-        /// /////////////////////
-        //~ conlog("comb: fo -kn  try  swps",forward,"-"+throwback,stint.toFixed(4),swps.toFixed(4))
-        //~ console.log("scanning:",ov-st,"swaps:",sswps)
-       
-      }while( swps>bswps*0.8 && cmbspan<maxspan)
-      
-      if(swps){
-        var rr=combubble(Av,Ax,st,ov)
-        /// /////////////////////
-        //~ console.log("fullcombed:",st,"to",ov,"(ttl:",ov-st)
-        //~ console.log("scored:",rr,"lowvs:",Av[Ax[0]],Av[Ax[1]])
-      }
-    
-      if(fixcnt>fixlim){ break } 
-    }
-  
-    if((!skipfix)&&fixcnt>=fixlim){ 
-      //~ console.log("falledback")
-      stndindex(Av,desc,Ax) 
-    }
-    //~ else{console.log(fixcnt,":brks<lim:",fixlim)}
-    //~ console.log("gup")
-    
-    return Ax
+    return combubinsort(Av,Ax)
  
   }
 
@@ -425,11 +331,140 @@ var Barsortfactory = function(){ return (function(){
     return Ar
   }
     
+  
+  function combubinsort(Av,Ax,desc){
+    
+    var bst=0,st=0,ov=0, sresult
+    
+    var fixcnt=0, fixlim=200, Alen=Av.length
+    
+    //~ var cfg=0.1 
+    //~ var cfg=0.5 
+    var cfg=1 
+    var maxstint=3*cfg, stint=1*cfg, minstint=0.1*cfg
+    var bdu=0
+    
+    //~ var mkforward=50
+    var mkforward=0.3
+    var firstee=1
+    
+    while((sresult=insertndx(Av,Ax,Math.floor(stint*Alen),st)).bk < Ax.length){ 
+      
+      //~ if(firstee){ combubble(Av,Ax,0,Alen,40,40); firstee=0 }
+      //~ console.log(stint)
+      var throwback = sresult.du - sresult.bk
+      var forward   = sresult.du - bdu ,bdu=sresult.du
+      
+      var aveback= stint*Alen/forward 
+      
+      var bback=throwback+aveback*2
+      
+      //~ conlog("bback",bback,"stint",stint)
+      if(bback>40){
+        var tuneo=10,tunep=1
+        var cmbspan=Math.floor(tuneo+ (bback)*tunep )
+           ,maxspan=Math.floor(Ax.length*0.01)+10000
+
+        st=sresult.du-cmbspan    ,ov=sresult.du+cmbspan*2
+        st=ntain(st,0,Ax.length) ,ov=ntain(ov,0,Ax.length)
+        
+        var swps, bswps, jj=Math.floor((ov-st)*0.3)
+        
+        var rr=combubble(Av,Ax,st,ov,jj,40)
+      
+        stint=(minstint*2+stint)/3
+            
+      }else{
+      
+        stint=(maxstint*2+stint)/3
+      }
+      
+      if( fixcnt++>fixlim ){ break } 
+    }
+  
+    if(fixcnt>=fixlim){ 
+      //~ console.log("falledback")
+      stndindex(Av,desc,Ax) 
+    }
+    //~ else{console.log(fixcnt,":brks<lim:",fixlim)}
+    //~ console.log("gup")
+
+    return Ax 
+    
+  }
+  
+  function combubinsort1(Av,Ax,desc){
+    
+    var bst=0,st=0,ov=0, sresult
+    var Alen=Av.length
+    var fixcnt=0, fixlim=20000
+    
+    //~ var cfg=0.1 
+    //~ var cfg=0.5 
+    
+    var cfg=40000 //almost passing through
+    var maxstint=2*cfg, stint=1*cfg, minstint=1*cfg
+    var bdu=0
+    
+    //~ var mkforward=50
+    var mkforward=0.3
+    var firstee=1
+    
+    //~ if(firstee){ combubble(Av,Ax,0,Alen,11,11); firstee=0 }
+    
+    while((sresult=insertndx(Av,Ax,stint,st)).bk < Alen){ 
+      
+      //~ console.log(stint)
+      var throwback = sresult.du - sresult.bk
+      var forward   = sresult.du - bdu ,bdu=sresult.du
+      
+      var aveback= stint/(forward+1) 
+      var nomback=(throwback*2+aveback*3)/5
+      var pass=60
+      
+      //~ conlog("forward",forward,"aveback",aveback.toFixed(2),"nomback",nomback.toFixed(2),"stint",stint.toFixed(2))
+
+      if((throwback)<pass){
+        if((nomback*1.5)<pass){ stint=(stint*2+maxstint)/3 }
+        continue
+      }
+      
+      var ccomb=throwback*1.25
+      
+      var cmbspan=Math.floor(ccomb)
+         ,maxspan=Math.floor(Alen*0.01)+30000
+
+      st=sresult.du-cmbspan ,ov=Math.floor(sresult.du+cmbspan*0.33)
+      
+      st=ntain(st,0,Alen) ,ov=ntain(ov,0,Alen)
+      
+      var jj=Math.floor(throwback*1.25)
+      
+      var rr=combubble(Av,Ax,st,ov,jj,Math.floor(jj*0.1+20) )
+    
+      //~ conlog("RR",rr,"st",st,"ov",ov,"ae",ov-st,"jj",jj)
+      
+      stint=(minstint*3+stint)/4
+    
+      if( fixcnt++>fixlim ){ break } 
+  
+    }
+    
+    if(fixcnt>=fixlim){ 
+      console.log("falledback")
+      stndindex(Av,desc,Ax) 
+    }
+
+    return Ax 
+    
+  }
+  
+    
     
   function insertndx(Av,Ax,giveover,s){ 
     
     if(s===undefined) s=1
-    var moved=0, giveover=Math.floor((giveover||20)*Ax.length+10)
+    var moved=0, giveover=Math.floor((giveover||(20*Ax.length))+1)
     //~ console.log("starting:",s,giveover)
     
     for(var e=Ax.length ,dueway=s ;dueway<e; dueway++){
