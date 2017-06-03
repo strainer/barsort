@@ -216,18 +216,21 @@ var Barsortfactory = function(){ return (function(){
   function morethan(a,b){ return a>b }
   
   function sortorder(Av,desc,Ax,skiptry,skipfix){
-    //conlog("doing sortorder",desc)
     
-    var flipp=false, Alen=Av.length
-    if((!skiptry)&&Alen>10){
+    see=true//false//true//false//true//false//true
+    if(see)console.log("doing sortorder",desc)
+    
+    var flipp=false, Alen=Av.length, minlen=10, hard=false
+    if((!skiptry)&&Alen>minlen){
       
-      var up=0,dw=0, samp=ntain(Alen>>>3,8,Alen)
+      var up=0,dw=0, samp=ntain(Alen>>>5,minlen)  // /64
             
-      var dd,bb=dd=Av[0],nc=Math.ceil(Alen/(samp*20))+0.8
-      for(var j=1; j<samp; j+=nc){ //fast gamble on intro sample
+      var dd,bb=dd=Av[0] ,nc=Math.ceil(0.1+Alen/(samp*8))
+      for(var j=Alen-nc*samp; j<Alen; j+=nc){ //fast gamble on intro sample
+        //~ console.log (j)
         bb=dd,dd=Av[j]
-        if(dd<bb){ up++,j-- }
-        if(dd>bb){ dw++,j-- }
+        if(dd<bb){ up++ }
+        if(dd>bb){ dw++ }
       }
 
       var upness=(up-dw)/samp
@@ -236,43 +239,47 @@ var Barsortfactory = function(){ return (function(){
       
       var threshup=0.3 //1 maxout -1 neg-out
       if(upness>threshup){ flipp=true; }
-      if((Alen>100)&&(up*3>samp)&&(dw*3>samp)) skiptry=true
+      if((up*4>samp)&&(dw*4>samp)) hard=true
     }
-    
-    if( !(Ax&&Ax.length>=Av.length) ){ Ax = ixArray(Av,flipp) }
+    if(see)console.log ("hard:",hard,"flipp:",flipp)
+    if( !(Ax&&Ax.length>=Alen) ){ Ax = ixArray(Av,flipp) }
     
     if(desc) { compar=lessthan } else { compar=morethan }
     var st=0
-    
-    if(!skiptry){ //try insertsort
-      //~ conlog("tryin")
-      var sresult, trys=1, stint=1
-
-      while ( (sresult=insertndx(Av,Ax,stint,st)).bk < Ax.length){
-        if((sresult.du)<(Ax.length*trys/15)) {
-          //~ console.log("pre-ins bust trying",st,sresult.du)
-          break 
-        }
-        st=sresult.du,trys++
-        stint*=1.1
-      }
+    ////////////////////////////////// take away true!!!!!!!!!!!!!!!!!!!!!
+    if((!skiptry)&&!(hard&&(Alen>75))){ //try insertsort
+      if(see) console.log ("easysoul sorting")
       
-      if(sresult.bk===Av.length){ 
-        //~ console.log("solved early")
+      var prema=3000, stint=400, trig=30, bottle=1,ramp=5000 //bottle much earlier!!
+      st = soulsort(Av,Ax,stint,prema,bottle,trig,ramp)
+      
+      //~ while ( (sresult=insertndx(Av,Ax,stint,st)).bk < Alen){
+        
+        //~ if( sresult.du <(Alen*trys/15)) {
+          //console.log("pre-ins bust trying",st,sresult.du)
+          //~ break 
+        //~ }
+        //~ st=sresult.du,trys++
+        //~ stint*=1.2
+      //~ }
+      
+      if(st===Alen){ 
+        if(see)console.log("solved by easysoul")
         return Ax 
       }
     }
  
-    if(st<Av.length*0.14) //made poor progress before
+    if(st<Alen*0.2) //made poor progress before
     { 
-      //~ conlog("barsorted")
-      //~ var barlen=19, reso=3 //these values mined, mebbie 16/4 or other better?
-      //~ var barlen=22, reso=2 //these values mined, mebbie 16/4 or other better?
-      var barlen=16, reso=2 //these values mined, mebbie 16/4 or other better?
-      //~ var barlen=12, reso=2 //these values mined, mebbie 16/4 or other better?
+      if(see)console.log("doing barsort")
+      
+      var barlen=14, reso=2 //these values mined, mebbie 16/4 or other better?
+      if(Av.length<1500000){ barlen=10}
+      if(Av.length<300000){ barlen=6}
+      
       var bars=Math.ceil(Av.length/barlen)+1 
       //~ var barppl=new Array(bars)
-      Ax=Ax||new Array(Av.length)
+      Ax=Ax||new Array(Alen)
       //~ console.log("Barlen:",barlen,"reso:",reso)
         
       var rgallocs=barassign({
@@ -290,16 +297,28 @@ var Barsortfactory = function(){ return (function(){
     }else if( !(Ax&&Ax.length>=Av.length) ){ Ax = ixArray(Av,flipp) }
     
     if(skipfix){ return Ax }
+
+    //~ return combubinsort(Av,Ax,desc)
     
-        
-    return combubinsort(Av,Ax)
- 
+    if(see)console.log("doing hardsoul") 
+    
+    prema=3000, stint=400, trig=30, bottle=150 //check bottle val
+    
+    st = soulsort(Av,Ax,stint,prema,bottle,trig,ramp)
+    
+    if(st<Alen) { 
+      if(see)console.log("standarized") 
+      stndindex(Av,desc,Ax) }
+    
+    //~ console.log(Ax.join(" "))
+    return Ax
+    
   }
 
   
   function ntain(a,b,c){ //contain a by b and c
     if(a<b) return b
-    if(a>c) return c
+    if(c<a) return c
     return a
   }
   
@@ -331,162 +350,158 @@ var Barsortfactory = function(){ return (function(){
     return Ar
   }
     
-  
-  function combubinsort(Av,Ax,desc){
+  var see=false
+  function soulsort(Av,Ax, stint, prema, bottle, trig,ramp){
     
-    var bst=0,st=0,ov=0, sresult
+    if(see)console.log("soul")
+    if(see)console.log(Ax.slice(0,10).join(" "))
     
-    var fixcnt=0, fixlim=200, Alen=Av.length
+    var trys=0 ,bst=0,st=0,Alen=Av.length  ,shfts=0,sresult
+    bottle = 1/bottle
     
-    //~ var cfg=0.1 
-    //~ var cfg=0.5 
-    var cfg=1 
-    var maxstint=3*cfg, stint=1*cfg, minstint=0.1*cfg
-    var bdu=0
-    
-    //~ var mkforward=50
-    var mkforward=0.3
-    var firstee=1
-    
-    while((sresult=insertndx(Av,Ax,Math.floor(stint*Alen),st)).bk < Ax.length){ 
+    while ( (sresult=insertndx(Av,Ax,stint,st)).bk < Alen){
+      bst=st,st=sresult.du,trys+=stint
       
-      //~ if(firstee){ combubble(Av,Ax,0,Alen,40,40); firstee=0 }
-      //~ console.log(stint)
-      var throwback = sresult.du - sresult.bk
-      var forward   = sresult.du - bdu ,bdu=sresult.du
-      
-      var aveback= stint*Alen/forward 
-      
-      var bback=throwback+aveback*2
-      
-      //~ conlog("bback",bback,"stint",stint)
-      if(bback>40){
-        var tuneo=10,tunep=1
-        var cmbspan=Math.floor(tuneo+ (bback)*tunep )
-           ,maxspan=Math.floor(Ax.length*0.01)+10000
-
-        st=sresult.du-cmbspan    ,ov=sresult.du+cmbspan*2
-        st=ntain(st,0,Ax.length) ,ov=ntain(ov,0,Ax.length)
+      shfts=(shfts+stint/(st-bst+1))*0.45
+      if(see)console.log("st",st,"shfts",shfts)
+      if(shfts>trig){
+        var Alnt=Math.ceil((prema)/50) 
+        if(st<trys*bottle-5000) break
+        if(see)console.log("st+Alnt",st,Alnt,prema)
+        st=submerge(Av,Ax,prema,st,ntain(st+Alnt,0,Alen) )
+        trys+=prema
         
-        var swps, bswps, jj=Math.floor((ov-st)*0.3)
-        
-        var rr=combubble(Av,Ax,st,ov,jj,40)
-      
-        stint=(minstint*2+stint)/3
-            
+        prema=prema>1000000?1000000:prema+ramp
       }else{
-      
-        stint=(maxstint*2+stint)/3
+        prema=prema-ramp
+        if(prema<2000) prema=2000
       }
-      
-      if( fixcnt++>fixlim ){ break } 
     }
-  
-    if(fixcnt>=fixlim){ 
-      //~ console.log("falledback")
-      stndindex(Av,desc,Ax) 
-    }
-    //~ else{console.log(fixcnt,":brks<lim:",fixlim)}
-    //~ console.log("gup")
-
-    return Ax 
+    
+    //~ console.log (trys,sresult.du)
+    if(see)console.log(Ax.slice(0,10).join(" "))
+    //~ if(sresult.du<Alen) console.log("early",trys,sresult.bk,sresult.du)
+    return sresult.du
     
   }
-  
-  function combubinsort1(Av,Ax,desc){
-    
-    var bst=0,st=0,ov=0, sresult
-    var Alen=Av.length
-    var fixcnt=0, fixlim=20000
-    
-    //~ var cfg=0.1 
-    //~ var cfg=0.5 
-    
-    var cfg=40000 //almost passing through
-    var maxstint=2*cfg, stint=1*cfg, minstint=1*cfg
-    var bdu=0
-    
-    //~ var mkforward=50
-    var mkforward=0.3
-    var firstee=1
-    
-    //~ if(firstee){ combubble(Av,Ax,0,Alen,11,11); firstee=0 }
-    
-    while((sresult=insertndx(Av,Ax,stint,st)).bk < Alen){ 
-      
-      //~ console.log(stint)
-      var throwback = sresult.du - sresult.bk
-      var forward   = sresult.du - bdu ,bdu=sresult.du
-      
-      var aveback= stint/(forward+1) 
-      var nomback=(throwback*2+aveback*3)/5
-      var pass=60
-      
-      //~ conlog("forward",forward,"aveback",aveback.toFixed(2),"nomback",nomback.toFixed(2),"stint",stint.toFixed(2))
 
-      if((throwback)<pass){
-        if((nomback*1.5)<pass){ stint=(stint*2+maxstint)/3 }
-        continue
+  var submcach=[] 
+  function submerge(Av,Ax,prema,s,e){
+   
+    if(see)console.log ("min:",s,e,e-s) 
+    //~ if(see)console.log(Ax.slice(0,10).join(" "))
+    var res=insertndx(Av,Ax,prema,s+1,e,s)
+    
+    e=res.du
+    
+    if(e-s>submcach.length) submcach=new Array(e-s)
+    for(var h=0,j=s,ee=e-s;h<ee; ) submcach[h++]=Ax[j++]
+    
+    //~ var cop=Ax.slice(s,e)
+    
+    if(see)console.log ("sli:",s,e,e-s)
+     
+    
+    //~ var wrpos=e-1, clonx=e-s-1, hipt=s(-1), bhipt=hipt, lep=1 
+    var wrpos=e-1, clonx=e-s-1, hipt=s-1, bhipt=hipt, lep=1 
+
+    //loop till clonx<0 
+    while(clonx!==-1)// ix of copyel to place
+    {
+      lep=1,bhipt=hipt
+      
+      if(see) console.log("wrpos:",wrpos)
+      if(see) console.log("clopt",clonx,"clova",Av[submcach[clonx]])
+      if(see) console.log("hipt:",hipt ,"hiva:",Av[Ax[hipt]])
+      //~ if(see) console.log("test:",compar( Av[Ax[hipt]],Av[submcach[clonx]] ))
+      
+      //find hipt for clonel, the highest ix where clonel can go 
+      //~ if( (hipt>-1) && !compar( Av[Ax[hipt]] , Av[submcach[clonx]]) ) // is not jdest
+      while( (hipt>-1) && compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is not jdest
+      { hipt=hipt-(lep++) } 
+      if(hipt<1){ hipt=0 } 
+      
+      //~ if( (hipt<=bhipt) && compar( Av[Ax[hipt]] , Av[submcach[clonx]]) ) // is jdest
+      while( (hipt<=bhipt) && !compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is jdest
+      { hipt++ }  //careful with stability here, get equal high as poss
+      hipt--
+      
+      if(see) console.log("hapt:",hipt ,"hava:",Av[Ax[hipt]])
+      //if hipt is bhipt
+      
+      //move bhipt to hipt up to wrpos (up by wrpos-bhipt)
+      //for(var c=bhipt(-1),d=c+copn; c>(=)hipt; c--){
+      for(var c=bhipt,d=c+wrpos-bhipt;  c>hipt; ){
+        Ax[d--]=Ax[c--]  //fiddle these byones
       }
       
-      var ccomb=throwback*1.25
+      //bhipt moving to wrpos, mvby wrpos-bhipt
+      //add bhipt-hipt to wrpos
+      wrpos-=(bhipt-hipt)
+      //THEN place copyel in wrpos
+      Ax[wrpos]=submcach[clonx]
+      //then dec wrpos and dec clonx
+      wrpos--,clonx--
       
-      var cmbspan=Math.floor(ccomb)
-         ,maxspan=Math.floor(Alen*0.01)+30000
+    }//while
+    
+    /*
+    var c=e, hipt=s-1, clonx=e-s-1 ,colen=e-s ,hiplace=clonx
 
-      st=sresult.du-cmbspan ,ov=Math.floor(sresult.du+cmbspan*0.33)
-      
-      st=ntain(st,0,Alen) ,ov=ntain(ov,0,Alen)
-      
-      var jj=Math.floor(throwback*1.25)
-      
-      var rr=combubble(Av,Ax,st,ov,jj,Math.floor(jj*0.1+20) )
-    
-      //~ conlog("RR",rr,"st",st,"ov",ov,"ae",ov-st,"jj",jj)
-      
-      stint=(minstint*3+stint)/4
-    
-      if( fixcnt++>fixlim ){ break } 
-  
-    }
-    
-    if(fixcnt>=fixlim){ 
-      console.log("falledback")
-      stndindex(Av,desc,Ax) 
-    }
 
-    return Ax 
-    
+    while(clonx>-1){
+      if( compar( Av[Ax[hipt]] , Av[submcach[clonx]]) ){
+        Ax[--c]= Ax[hipt--]
+      }else{
+        Ax[--c]= submcach[clonx--]
+      }
+    }
+    */
+    //~ if(see)console.log(Ax.slice(0,10).join(" "))
+    return e
   }
-  
+
     
     
-  function insertndx(Av,Ax,giveover,s){ 
+  function insertndx(Av,Ax,prema,s,e,a){ 
     
+    if(a===undefined) a=0
     if(s===undefined) s=1
-    var moved=0, giveover=Math.floor((giveover||(20*Ax.length))+1)
-    //~ console.log("starting:",s,giveover)
+    if(e===undefined) e=Ax.length
     
-    for(var e=Ax.length ,dueway=s ;dueway<e; dueway++){
-      var pickx = Ax[dueway],pickv=Av[pickx]
-      var bacway =dueway-1
-      while( bacway>=0 && compar(Av[Ax[bacway]] , pickv)){ //if pre is smaller
+    var moved=0, prema=Math.ceil( prema||20*e )
+    var pickv=compar(Av[Ax[s]],Av[Ax[s]]+1)?Av[Ax[s]]+1:Av[Ax[s]]-1
+    var oback=0,bacway=0,pickx
+    
+    for(var dueway=s ;dueway<e; dueway++){
+      
+      pickx = Ax[dueway] 
+      
+      //this pick is lower or equal than last pick
+      //which was placed oback
+      if( !compar( Av[pickx],pickv ) ){ 
+        for(var t=dueway;t>oback;){ Ax[t] = Ax[--t] }
+        moved+=bacway-oback ; bacway=oback
+      }else{
+        bacway=dueway-1
+      }
+      pickv=Av[pickx]
+      
+      while( bacway>=a && compar(Av[Ax[bacway]] , pickv)){ //if pre is smaller
         Ax[bacway+1] = Ax[bacway]              //
         bacway--
         moved++
       }
-      Ax[bacway+1] = pickx                     //put pickx down
+      Ax[++bacway] = pickx                     //put pickx down
+      oback=bacway
       //~ moved+=dueway-bacway
-      if( moved > giveover){ 
-        //~ console.log("insert bail:",dueway-1); 
+      if( moved > prema){ 
         return {bk:bacway,du:dueway} 
       }
     }
      
-    //~ console.log("fullinsfin",dueway,e)
     return {bk:dueway,du:dueway}
   }
-
      
   function combubble(Av,Ax,s,e,jmp,fin){
     
