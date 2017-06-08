@@ -1,0 +1,32 @@
+state of project: barsort.js
+
+it was tried: not saving quantized scores, but instead
+recalculating them twice on fly, but resulted in significant
+slowdown as the calculation was heavier apparently than 
+the extra memory demand, even for multi megabyte lists.
+
+however it is well not to create scores 'in place'
+as score redistribution can be repeated on a saved input
+to improve the fill level of buckets:
+
+foreach bucket 
+  if zero extend current-zero-span
+
+foreach rescalebucket range{
+    
+  foreach rangebucket
+    bucket=0
+
+  foreach element
+    if elem>rdistrange ||<rdistrange
+      elem= rescale elem
+      elem= quantise
+      
+}
+
+///
+barsort is possibly not well optimised yet
+barassign has multiplexed bars in order improve the definition
+of large bars.
+but small bars are used to make presorted index for full sorting
+most efficient may be bars with average target population of 3

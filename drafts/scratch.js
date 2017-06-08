@@ -1,8 +1,32 @@
 require ('../dlib/mutil.js')
 //~ Fdrandom=require ('../Fdrandom.min.js')
-Fdrandom=require ('../dlib/Fdrandom.js')
+Fdrandom=Fdr=require ('../dlib/Fdrandom.js')
 Barsort=require('../barsort.js')
 
+
+
+
+ascending10RandomEndInt = function (n) {
+  var arr = [];
+  for (var i = 0; i < n; i++) {
+    arr.push(i);
+  }
+  var endStart = n - 10;
+  for (i = endStart; i < n; i++) {
+    arr[i] = Math.floor(Fdr.next() * n);
+  }
+  return arr;
+};
+
+
+function wub(len){ var ll=0; return Fdrandom.bulk( len,function(){ return (ll++)+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit()*Fdrandom.rbit() )} ) }
+
+//~ var ss=wub(4000000)
+var ss=ascending10RandomEndInt(10000)
+
+conlog(Barsort.sortorder(ss)[0])
+
+return
 
 
 //~ console.log(Barsort.sortorder([7,3,4,6]))
@@ -21,7 +45,9 @@ console.log((tlen*8/1000000).toFixed(0),"megabyte test array")
 //~ )
 
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.gthorn()*Fdrandom.gthorn()*1000 } )
+
 var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.gnorm()*1000 } )
+
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.f48()*1000 } )
 //~ var real_rg=Fdrandom.bulk( tlen,function(){ return Fdrandom.irange(1,600) } )
 //~ real_rg.push(100000000000)
