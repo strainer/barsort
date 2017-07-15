@@ -7,186 +7,332 @@
 var Barsortfactory = function(){ return (function(){ 
   'use strict'
 
-  function version(){ return "0.10.0" }
+  function version(){ return "0.11.0" }
+
+  var _cntofbin=[],_barsfill=[],_barofbin=[] //these arrays reused between calls
+  var _agewkspc=0,_genwkspc=100 //these count use of workspace arrays
 
 
-  var _cntofsub=[],_destrema=[],_destosub=[] //these arrays reused between calls
-  var wkcnt=0,wkcyc=100 //these count use of workspace arrays
+  function barassign_secure(kysval,nbar,barppl,arg){
+    var ixkeys=sortorder(kysval,[],0,0,arg.descend)  //unoptimal without st,ov
+    ///todo this should leave original kysval untouched
+    if(arg.arrange) return ixkeys
 
-
-  function barassign(pr){ //barnum:,scores:,st:,ov:,keysbar:,barfreq:,burnscore:
-    
-    var scores,pscores = pr.scores
-       ,st     = pr.st||0 
-       ,ov     = pr.ov||pscores.length
-       ,barnm  = pr.barnum
-       ,resol  = pr.resolution||5  //over sample x5
-       ,kysbar = pr.keysbar        //bari into kysbar[st..ov]
-       ,barppl = pr.barppl
-  
-    if(pr.secure){
-      var ixkeys=sortorder(pscores,[],0,0,pr.descend)  //unoptimal without st,ov
-                                //this should leave original scores untouched
-      if(pr.ordinate) return ixkeys
-      
-      var barsiz=(ov-st)/barnm, dubar=0, barppl=barppl||[]
-      for(var i=0;i<barnm;i++){ barppl[i]=0 }
-      for(var c=0,e=ixkeys.length;c<e;c++){
-        if(ixkeys[c]>=st&&ixkeys[c]<ov){
-          var cbr=Math.round(dubar++/barsiz)
-          kysbar[ixkeys[c]]= cbr 
-          barppl[cbr]++ 
-        } 
+    var barsiz=(ov-st)/nbar, dubar=0, barppl=barppl||[]
+    for(var i=0;i<nbar;i++){ barppl[i]=0 }
+    for(var c=0,e=ixkeys.length;c<e;c++){
+      if(ixkeys[c]>=st&&ixkeys[c]<ov){
+        var cbr=Math.round(dubar++ /barsiz)
+        kysbar[ixkeys[c]]= cbr 
+        barppl[cbr]++ 
       } 
-      return
+    } 
+    return
+  }
+  
+  
+  function barassign(arg){ //barnum:,kysval:,st:,ov:,keysbar:,barppl:
+    
+    var nbar   = arg.barnum  //number of bars
+       ,kysval = arg.scores  //sort weights
+       ,kysbar = arg.keysbar //must pass array for bars
+       ,barppl = arg.barppl  //reuse array for bar population counts
+       ,st     = arg.st||0 
+       ,ov     = arg.ov||kysval.length
+       ,nb     = ov-st
+       ,resol  = arg.resolution||5  //over sample bins x5
+      
+    var kysbin      //keep this integer for best performance
+                   
+    if(arg.secure){ 
+      barassign_secure(kysval,nbar,barppl,arg); return 
     }
     
-    if(!pr.burnscore){  //clone score
-      scores=new Array(pscores.length)
-    }else{ scores=pscores }
+    //~ if(!arg.burnscore){  //clone score
+      //~ kysbin=new Array(kysval.length)
+    //~ }else{ kysbin=kysval } //! shouldnt do this
     
-    var smnm=0, qvl=-0 ,nb=ov-st
     
-    var minv=pscores[st] ,maxv=minv ,minv2=minv ,maxv2=minv 
-    var lowex=-281474976710656 //-2^48
+    var wel= welfordscan(kysval,st,ov)
+    
+    var minv=wel.minv ,maxv=wel.maxv ,sdev=wel.sdev 
+    
+    var maxwelf=mean+sdev*4.5, minwelf=mean-sdev*4.5
+    
+    var nbin=resol*nbar, ebin=nbin-1
+    
+    //grow or occasionally refresh persistent workspaces
+    if( true || _cntofbin.length<nbin //todo test this, its disabled
+      ||( _cntofbin.length>nbin && _agewkspc++ >_genwkspc ) ){
+       _agewkspc = 0
+       _cntofbin = new Array(nbin) 
+       _barofbin = new Array(nbin)  //may try these typed as ints
+       _barsfill = new Array(nbar)  //or zeroing them here to pack them
+     }                              //or redo 2 arrays nearer use
+     
+    for(var ch=0; ch<nbin; ch++){ _cntofbin[ch]=0 }
+    
+    //~ if(arg.burnscore){
+      //we cant burn score - or this would be fast shortcut 
+    //~ }else{
+    
+    var binperval=-0, minw=minv ,maxw=maxv
+    
+    //~ if(pr.descend){ minq=maxy,maxq=miny }  //do this another way later
+        
+    if(maxwelf>maxw && minwelf<minw) //&&minw!==-Infinty&&maxw!==Infinty 
+    { //do fast bins
+      
+      binperval=(nbin-0.0000001)/(maxw-minw)
+      
+      for(var i=st; i<ov; i++) 
+      { kysbin[i]=(binperval*(kysval[i]-minw))>>0  } 
+     
+    }else{
+      //do slow bins (may have infinitys)
+      maxw=maxwelf,minw=minwelf
+      binperval=(nbin-0.0000001)/(maxw-minw)
+      
+      for(var i=st; i<ov; i++) 
+      { 
+        var qvl=binperval*(kysval[i]-minw) //check work with infinitys
+        if(qvl<1)    { kysbin[i]=0    ; continue }
+        if(qvl>=ebin){ kysbin[i]=ebin ; continue } //todo: float optimise
+        kysbin[i] = qvl>>0 
+      }
+ 
+    }
+    
+    //tally bins
+          
+    for(var i=0; i<nbin; i++){ _cntofbin[i]=0 } 
+    for(var i=st;  i<ov; i++){ _cntofbin[kysbin[i]]++ } 
+    
+    var binfixfactor=100 //todo !binfix disabled 
+    
+    if(binspillage(nbin) > nbin*binfixfactor){
+      //~ if(see){ console.log("imbins") }
+      improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, minw,maxw, binperval) 
+      //improves kysbin and redo _cntofbin
+    }
+    
+    //while _barsfill fills, _barofbin can assign bins with bars 
+    //_barofbin is used to route bars to keys kysbar output.
+    
+    var kysperbar=(nb/nbar)
+       ,fillbar=0,fldbar=0,spills=[]
+       ,nxtcap=kysperbar+0.5, fcap=Math.floor(nxtcap)
 
-    var delt=0,delt2=0,mean=0,me2=0 
+    for(var ch=0; ch<nbar; ch++){ _barsfill[ch]=0 }
+    
+    for(var bin=0; bin<nbin; bin++){
+      
+      _barofbin[bin]=fillbar            //_cntofbin bar bin goes to dest[fillbar]
+      _barsfill[fillbar]+=_cntofbin[bin]  //_barsfill[fillbar] gets population of bar bin
+
+      while(_barsfill[fillbar]>=fcap){
+        _barsfill[fillbar+1]+=_barsfill[fillbar]-fcap
+        _barsfill[fillbar]=fcap
+        fillbar++
+        nxtcap+=kysperbar-fcap
+        fcap=nxtcap >>>0
+      }
+    } //bins have there anchor bars .. next give keys their bars 
+        
+    //_barsfill[fillit] is capacity of bars
+       
+    //_barsfill is parallel to barppl
+    //_barsfill must empty but barppl wants returned
+    //ceil of _barsfill is complicated here by dvrems fraction..
+    
+    if(arg.arrange){ //write keys into order in kybars 
+      var bapos=new Array(nbar); bapos[0]=0 
+      for(var i=0;i<nbar-1;i++){ bapos[i+1]=bapos[i]+_barsfill[i] }
+    
+      for(var i=st; i<ov; i++){ //is not st ov capable
+        var binofel=kysbin[i]
+        
+        while(_barsfill[_barofbin[binofel]]===0){ 
+          //_barsfill[_barofbin[binofel]]--
+          _barofbin[binofel]++ 
+        }
+        _barsfill[_barofbin[binofel]]--
+        kysbar[bapos[_barofbin[binofel]]++ ]=i //i know its crazy, but its true
+      }
+    }else{ //write barnums in order of keys
+      if(barppl) //this array is used by calling function
+      { for(var i=0;i<nbar;i++){ barppl[i]=_barsfill[i] } }
+
+      for(var i=st; i<ov; i++){ 
+        var binofel=kysval[i]
+        
+        while(_barsfill[_barofbin[binofel]]===0){ 
+          //~ _barsfill[_barofbin[binofel]]--
+          _barofbin[binofel]++ 
+        }
+        _barsfill[_barofbin[binofel]]--
+        kysbar[i]=_barofbin[binofel] /// /// /// business line
+        
+      }
+    }
+    
+    return _barsfill //this was used for checking but is not used now
+  }
+  
+
+
+  
+  function improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, minw,maxw, binperval){
+     
+    var spilled=0, spills=0
+    
+    var fbin=Math.floor((ov-st)/nbin) ,bigbin=fbin*2
+    
+    var markbin_pos=[] ,markbin_lod=[]
+    //window on current/trend value 
+    var dbin=_cntofbin[0], bbin=dbin, obin=dbin, j=1
+    
+    //current range details
+    var cr_len=1, cr_tot=dbin, cr_lo=0, cr_hi=(bigbin>>2)+1
+    
+    // loop over bins, mark endStart of ranges of similar magnitude vals
+    // for after interest in: may compress | leave | may expand | must expand
+    while( j<=nbin ){ 
+      
+      bbin=dbin, dbin=_cntofbin[j]
+      
+      //a decaying measure of trending value, same scale as avg value
+      obin=(obin + (bbin + dbin)>>1)>>1 
+      
+      if(obin>cr_hi||onbin<cr_lo){
+        markbin_pos.push(j)  //exclusive end, inclusive start of new range
+        markbin_lod.push(cr_tot)
+
+        if(onbin>bigbin){ 
+          spilled+=cr_tot-(cr_len*fbin)
+          spills++
+        }
+
+        cr_tot=0, cr_len=0
+        cr_hi=1+(onbin*1.33)>>0
+        cr_lo=(onbin*0.66)>>0
+      }
+      
+      cr_tot+=_cntofbin[j]
+      cr_len++
+      
+    }//till j>nbin
+
+    //if low spillage skip this rebinning
+    var spill_trip=1
+    
+    if(spilled < nbin*spill_trip ){ return } //it actually doesnt need rebinned
+    
+    //make rearrangers:
+
+    var rangSepv=[]   // value which separates from last range
+    var rangScal=[]   // target bins / full val len of range
+    var rangBina=[]   // anchor bin of target range
+    
+    //minv, maxv are true bounds, they may be infinite 
+    //minw, maxw are nominal bounds, finite 
+  
+    var valperbin=1/binperval
+    
+    //initial low anchor is possibily infinite :(
+    //todo if minw is -infinity
+    //fix it by skipping it
+    //and decreasing minw if needed
+      
+    var bsepval=(minv < minw)? minv : minw 
+    var csepval=0
+    var bpos=0,cpos=0,dpos=0 //marked positions  b_efore c_urrent d_ue 
+                             //todo dpos range consolidation
+    var cabin=0 //current anchor bin number (in redone bins)
+    
+    for( var m=0,me=markbin_pos.length; m<me; m++){
+      
+      //todo: lookahead mark rejoin
+     
+      cpos=markbin_pos(m)      //src bin 
+      
+      csepval=minw + valperbin*cpos  //high end of src bin range
+      
+      cload=markbin_lod(m)      //population of marked range
+      
+      ibins=(cload*bins_per_load)>>0 //ideal bins for population 
+      
+      valobins=(csepval-bsepval)/ibins //range of an ideal bin
+      
+      rangScal.push(1/valobins) //val scale to result ibins
+      rangSepv.push(bsepval)    //behind sep val (low anchor of range )
+      rangBina.push(cabin)      //current anchor bin 
+      
+      cabin+=ibins
+      bval=cval
+      bpos=cpos
+
+    }
+   
+    //rebin according to tallanalysis
+   
+    for(var ch=0; ch<nbin; ch++){ _cntofbin[ch]=0 }
+             
+    for(var i=st; i<ov; i++){ 
+      var ri=1 , cval=kysval[i]
+      
+      //first rangSepv is anchor of first range
+      while(cval>=rangSepv[ri]) ri++ //find sepval more than cval
+      var bin=(((val-rangSepv[--ri])*rangScal[ri])>>0)+rangBina[ri]
+      
+      kysbin[i]=bin
+      _cntofbin[bin]++ 
+    }
+   
+  } 
+
+  function binspillage(nbin){ 
+    
+    var spill=0 , kk=_cntofbin[0]+_cntofbin[1] 
+    for(var i=2; i<nbin; i++){ 
+      kk+=_cntofbin[i]
+      var kov=kk-full
+      if(kov>0){ 
+        spill+=kov 
+        kk=kk>>1  //half instead of zero rates consequtive harder
+      } 
+    }
+    return spill
+  }
+  
+  function welfordscan(Ai,st,ov){
+    
+    var minv=Ai[st] ,maxv=minv ,smnm=0, qvl=-0 
+    var delt=-0 ,delt2=-0 ,mean=-0 ,me2=-0 
     
     for(var i=st; i<ov; i++) //need to max,min 
     { 
-      if(!(pscores[i]>lowex)){ pscores[i]=lowex }  //but score should not be NaN!
-      qvl=pscores[i]||0 
+      qvl=Ai[i]||-0 
       
-      if (qvl>maxv){ if (qvl>maxv2){ maxv=maxv2, maxv2=qvl }else{ maxv=qvl } 
-      }else if (qvl<minv){ if (qvl<minv2){ minv=minv2, minv2=qvl }else{ minv=qvl } }
+      if (qvl>=maxv)
+      { maxv=qvl ; if(qvl === Infinity) continue } 
+      else if (qvl<minv)
+      { minv=qvl ; if(qvl === -Infinity) continue }
           
-      //variance.. welfords alg
+      //calc variance.. welfords alg
       smnm++	
-      delt  = qvl - mean
-      mean += delt/smnm
-      delt2 = qvl - mean
-      me2  += delt*delt2	
-
+      delt  = qvl  - mean
+      mean += delt / smnm
+      delt2 = qvl  - mean
+      me2  += delt * delt2	
+    
     }
     
-    var sdev=Math.sqrt( me2/(smnm-1) )
-    
-    var maxy=mean+sdev*3.5, miny=mean-sdev*3.5
-    
-    //~ console.log("minmax",miny,maxy)
-    
-    if(maxy>maxv) maxy=maxv
-    if(miny<minv) miny=minv
-    
-    var subdvn=resol*barnm-1
-    var qun=(subdvn-1)/(maxy-miny)
-   
-    ///make scorerange function and repeat it to zoom on bunched dists
-    //~ scorerange(pscores,scores,pr.descend,)
-    //~ function scorerange(inputs,scores,minv,maxv,minsc,maxsc)
-   
-    if(pr.descend){
-      //~ console.log("minmax",miny,maxy)
-      for(var i=st; i<ov; i++) 
-      { qvl=Math.floor(qun*(maxy-pscores[i]))
-        //~ console.log(qvl)
-        scores[i]=qvl<0? 0:qvl>subdvn? subdvn:qvl
-        //~ console.log(scores[i])
-      }
-    }else{
-      for(var i=st; i<ov; i++) 
-      { 
-        qvl=qun*(pscores[i]-miny )
-        scores[i]=qvl<0? 0: qvl>subdvn? subdvn: qvl>>>0
-      }
-    }
-    
-    subdvn++  //true number of subdivisions
-    
-    //~ console.log(subdvn)
-    //recycle these temp arrays
-    //var _cntofsub=new Array(subdvn), _destosub=new Array(subdvn)
-    
-    if( true || _cntofsub.length<subdvn ///test if this helps ?
-     ||( wkcnt++>wkcyc && _cntofsub.length>subdvn) ){
-      _cntofsub = new Array(subdvn) 
-      _destosub = new Array(subdvn)
-      wkcnt=0
-    } //just maintaining workspace arrays here ...
-    
-    for(var ch=0; ch<subdvn; ch++){ _cntofsub[ch]=0 }
-    if (_destrema.length<barnm){ _destrema=new Array(barnm) }
-    for(var ch=0; ch<barnm; ch++){ _destrema[ch]=0 }
+    var sdev= smnm>1? Math.sqrt( me2/(smnm-1) ) : 0
 
-    for(var i=st; i<ov; i++){  _cntofsub[scores[i]]++  } ///...
-    
-    var rlbar=(nb/barnm)
-       ,fllbar=0,fldbar=0,spills=[]
-       ,nxtcap=rlbar+0.5, fcap=Math.floor(nxtcap)
-    //largest subdv is sometimes getting a key - fixit....
-    
-    //determining sub anchors to bar anchors  (anchor is first address)
-    //~ console.log("subdvn:",subdvn,'barnm:',barnm)
-    //~ 
-    
-    for(var sub=0; sub<subdvn; sub++){
-      
-      _destosub[sub]=fllbar            //_cntofsub bar sub goes to dest[fllbar]
-      _destrema[fllbar]+=_cntofsub[sub]  //_destrema[fllbar] gets population of bar sub
-
-      while(_destrema[fllbar]>=fcap){
-        _destrema[fllbar+1]+=_destrema[fllbar]-fcap
-        _destrema[fllbar]=fcap
-        fllbar++
-        nxtcap+=rlbar-fcap
-        //~ fcap=Math.floor(nxtcap)
-        fcap=nxtcap >>>0
-        //~ if(fllbar-fldbar>1){ spills.push(fldbar); fldbar++ }
-      }
-      //~ fldbar=fllbar
-    }
-      
-    //_cntofsub[h] is the freq of sub 
-    //_destrema[fillit] is capacity of bars
-       
-    //_destrema is parallel to barppl
-    //_destrema must empty but barppl wants returned
-    //ceil of _destrema is complicated here by dvrems fraction..
-    
-    if(pr.ordinate){ //write keys into order in kybars instead of
-      var bapos=new Array(barnum); bapos[0]=0 //writing barnums in order of keys
-      for(var i=0;i<barnm-1;i++){ bapos[i+1]=bapos[i]+_destrema[i] }
-    
-      for(var i=st; i<ov; i++){ //not st ov capable
-        var subposi=scores[i]
-        
-        while(_destrema[_destosub[subposi]]===0){ 
-          //_destrema[_destosub[subposi]]--
-          _destosub[subposi]++ 
-        }
-        _destrema[_destosub[subposi]]--
-        kysbar[bapos[_destosub[subposi]]++ ]=i //i know its crazy, but its true
-      }
-    }else{ 
-      if(barppl) //this array is used by an external callee
-      { for(var i=0;i<barnm;i++){ barppl[i]=_destrema[i] } }
-
-      for(var i=st; i<ov; i++){ 
-        var subposi=scores[i]
-        
-        while(_destrema[_destosub[subposi]]===0){ 
-          //~ _destrema[_destosub[subposi]]--
-          _destosub[subposi]++ 
-        }
-        _destrema[_destosub[subposi]]--
-        kysbar[i]=_destosub[subposi] /// /// /// business line
-        
-      }
-    }
-    
-    return _destrema //this was used for checking but is not used now
+    return {minv:minv ,maxv:maxv ,sdev:sdev ,mean:mean } 
   }
-  
+   
       
   var compar
   function lessthan(a,b){ return a<b }
@@ -257,7 +403,7 @@ var Barsortfactory = function(){ return (function(){
        ,resolution:reso
        ,descend:desc
        ,secure:false
-       ,ordinate:true
+       ,arrange:true
       })
             
     }else if( !(Ax&&Ax.length>=Av.length) ){ Ax = ixArray(Av,flipp) }
