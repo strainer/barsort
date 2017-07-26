@@ -16,11 +16,12 @@ var Barsortfactory = function(){ return (function(){
 
   var _cntofbin=[],_barsfill=[],_barofbin=[] //these arrays reused between calls
   var _agewkspc=0,_genwkspc=100            //count use of these workspace arrays
-  
+                                         //todo make these default off
   
   function barassign(arg){ //barnum:,kysval:,st:,ov:,keysbar:,barppl:
     
-    see=true
+    //~ see=true
+    see=false
     
     var nbar   = arg.barnum  //number of bars
        ,kysval = arg.scores  //sort weights
@@ -31,6 +32,13 @@ var Barsortfactory = function(){ return (function(){
        ,ov     = arg.ov||kysval.length
        ,nkys   = ov-st
        ,resol  = arg.resolution||5  //over sample bins x5
+                      
+    if(see){
+      console.log("nbar",nbar,"nkys",nkys,"resol",resol) 
+      console.log("kysval")
+      console.log(kysval.slice(0,50).join(","))
+      console.log(kysval.slice(kysval.length-50,kysval.length).join(","))
+    }
                       
     if(arg.secure){ 
       barassign_secure(kysval,nbar,barppl,arg); return 
@@ -43,10 +51,11 @@ var Barsortfactory = function(){ return (function(){
     
     var wel= welfordscan(kysval,st,ov)
     
-    if(see){console.log(wel)}
+    //~ if(see){console.log(wel)}
+    
     var minv=wel.minv ,maxv=wel.maxv 
     
-    var maxwelf=wel.mean+wel.sdev*4.5, minwelf=wel.mean-wel.sdev*4.5
+    var histat=wel.mean+wel.sdev*4.5, lostat=wel.mean-wel.sdev*4.5
     
     var nbin=resol*nbar, ebin=nbin-1
     
@@ -65,26 +74,48 @@ var Barsortfactory = function(){ return (function(){
       //we cant burn score - or this would be fast shortcut 
     //~ }else{
     
-    var binperval=-0, minw=minv ,maxw=maxv
+    var binperval=-0, lomark=minv ,himark=maxv
     
     //~ if(pr.descend){ minq=maxy,maxq=miny }  //do this another way later
-        
-    if(maxwelf>maxw && minwelf<minw) //&&minw!==-Infinty&&maxw!==Infinty 
+     if(see) console.log("histat",histat,"himark",himark,"lostat",lostat,"lomark",lomark)
+    
+    //potential range density savings from zooming in on spread
+    var rdsav=-0
+    if(histat<maxv){ rdsav+= histat-maxv }
+    if(lostat>minv){ rdsav+= minv-lostat }
+    //calib fast slow bin
+    if(!(rdsav >= (maxv-minv)*0.1)) //clause convolution excludes Infinites 
     { //do fast bin
+
+      if(see) console.log("fast bin")
+      binperval=(nbin-0.0000001)/(maxv-minv) //tweaked so not to cleave maxv
+
+      var valperbin = 1/binperval
       
-      binperval=(nbin-0.0000001)/(maxw-minw)
-      
+      lomark = minv + valperbin //these are set for a later process
+      himark = maxv - valperbin //not sure if himark needed...
+            
       for(var i=st; i<ov; i++) 
-      { kysbin[i]=(binperval*(kysval[i]-minw))>>0  } 
+      { kysbin[i]=(binperval*(kysval[i]-minv))>>0  } 
      
     }else{
       //do slower bin (may have infinitys)
-      maxw=maxwelf,minw=minwelf
-      binperval=(nbin-0.0000001)/(maxw-minw)
+      if(see) console.log("slow bin")
       
+      // minv  lostat    highstat   maxv
+      
+      lomark=lostat 
+      himark=histat
+      binperval=(nbin-2)/(himark-lomark)
+      valperbin=1/binperval
+      
+      lomark-=valperbin*1.0000001 
+      //so lomark becomes 1, 0 is anything under
+      //himark and over is nbin -2 +1 = ebin
+             
       for(var i=st; i<ov; i++) 
       { 
-        var qvl=binperval*(kysval[i]-minw) //check work with infinitys
+        var qvl=binperval*(kysval[i]-lomark) //check work with infinitys
         if(qvl<1)    { kysbin[i]=0    ; continue }
         if(qvl>=ebin){ kysbin[i]=ebin ; continue } //todo: float optimise
         kysbin[i] = qvl>>0 
@@ -97,20 +128,22 @@ var Barsortfactory = function(){ return (function(){
     for(var i=0; i<nbin; i++){ _cntofbin[i]=0 } 
     for(var i=st;  i<ov; i++){ _cntofbin[kysbin[i]]++ } 
     
-    var binfixfactor=100 //todo !binfix disabled 
+    var binfixfactor=0 //calib improvebins 
     var barfull=(nkys/nbar)>>0
-    
-    if(binspillage(nbin,barfull) > nbin*binfixfactor){
+    var spillo=binspillage(nbin,barfull)
+    if( spillo > nbin*binfixfactor){
+      if(see){console.log("spillo",spillo,"barfull",barfull)}
+      if(see){console.log(wel)}
       //~ if(see){ console.log("imbins") }
-      improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, minw,maxw, binperval) 
+      improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, lomark,himark, binperval) 
       //improves kysbin and redo _cntofbin
-    }
+    }else{ if(see) console.log("skip improve") }
     
     //while _barsfill fills, _barofbin can assign bins with bars 
     //_barofbin is used to route bars to keys kysbar output.
     
     var kysperbar=(nkys/nbar)
-       ,fillbar=0,fldbar=0,xsbins=[]
+       ,fillbar=0
        ,nxtcap=kysperbar+0.5, fcap=Math.floor(nxtcap)
 
     for(var ch=0; ch<nbar; ch++){ _barsfill[ch]=0 }
@@ -172,18 +205,21 @@ var Barsortfactory = function(){ return (function(){
 
 
   
-  function improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, minw,maxw, binperval){
+  function improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, lomark,himark, binperval){
      
     var xsvals=0, xsbins=0
     
-    var fulbin=Math.floor((ov-st)/nbin) ,bigbin=fulbin*2
+    var fulbin=(ov-st)/nbin
     
     var rmark_dposn=[] ,rmark_cload=[]
     
-    if(minv!==minw){ //if differs the first bin needs treated separately
-      rmark_dposn.push(1)
-      rmark_cload.push(_cntofbin[j++])
+    var j=0 
+
+    if(!similar85(lomark , minv + 1/binperval) ){ //minv is within 85% of normal
+      rmark_dposn.push(1)              //1 is a new anchor
+      rmark_cload.push(_cntofbin[j++]) //count of 0
     }
+    
     //obin is window on current/trending countobin 
     var dbin=_cntofbin[j], bbin=dbin, obin=dbin
     
@@ -194,6 +230,8 @@ var Barsortfactory = function(){ return (function(){
     // for after interest in: may compress | leave | may expand | must expand
     while( ++j < nbin ){ // (j is in dbin) 
       
+      //~ if(see)console.log(j)
+      
       bbin=dbin, dbin=_cntofbin[j]
       
       //a decaying measure of trending value, same scale as avg value
@@ -201,17 +239,12 @@ var Barsortfactory = function(){ return (function(){
       
       if(obin>cr_hi||obin<cr_lo){
         
-        //a mark of n notes a different range starting at n
-        //then the parallel key, the load, 
-        //notes the kys assigned assigned up to
-        //the beginning of this current bin
-        //so, the first rmark should never be 0
-        //it should be at least 1
-        
-        rmark_dposn.push(j)  //exclusive end, inclusive start of ranges
+        //note the beginning of subsequent range (bin nbr j)
+        rmark_dposn.push(j) 
+        //aside the population of preceeding range 
         rmark_cload.push(cr_tot)
 
-        var h=cr_tot-(cr_len*fulbin)
+        var h=cr_tot-((cr_len*fulbin)>>0)
         if(h>0){
           xsvals+=h
           xsbins+=cr_len
@@ -231,7 +264,7 @@ var Barsortfactory = function(){ return (function(){
       rmark_dposn.push(nbin)       //this might be done in above loop
       rmark_cload.push(cr_tot)     //but test j==e in loop may slow 10-25% 
 
-      var h=cr_tot-(cr_len*fulbin)
+      var h=cr_tot-((cr_len*fulbin)>>0)
       
       if(h>0){
         xsvals+=h
@@ -243,12 +276,24 @@ var Barsortfactory = function(){ return (function(){
     rmark_dposn.push(0)
     rmark_cload.push(Infinity) //todo ?really infinity or other breaking value
                                //an int might be better for array consistency
-                               
+      
+    if(see){
+      console.log("cntbn",_cntofbin.join(", "))
+      console.log("dposn",rmark_dposn.join(", "))
+      console.log("cload",rmark_cload.join(", "))
+      console.log("minv",minv,"lomark",lomark)
+      console.log("maxv",maxv,"himark",himark)
+      console.log("xsvals",xsvals,"xsbins",xsbins) 
+    } 
+                             
     /// rmarks done  -  begin rearangers .....
     
     //if low spillage skip this rebinning
-    var spill_trip=1
-    if( xsvals < nbin*spill_trip ){ return } //turns out doesnt need rebinned
+    var spill_trip=0 //calib cancel rebinning
+    if( xsvals < nbin*spill_trip ){ 
+      if(see) console.log("low spill no rebin",xsvals)
+      return 
+    } //turns out doesnt need rebinned
     
                      // struc-of-array rearrangers:
     var rearsepv=[]  // value which separates from prev range
@@ -256,88 +301,101 @@ var Barsortfactory = function(){ return (function(){
     var rearbina=[]  // anchor bin of this range
       
     var valperbin   = 1/binperval
-    var bin_per_ppl = nbin/nkys   // todo have? 
+    var bin_per_ppl = (nbin-1)/(ov-st) 
     var rmbin=0.5                 // carry remainder of bin nb change 
     
     //minv, maxv are true bounds, they may be infinite 
-    //minw, maxw are nominal bounds, finite 
+    //lomark, himark are nominal bounds, finite 
 
-    var bsepval=0, csepval=minw    // behind separation value
+    var bsepval=-0, csepval=-0    // behind separation value
    
     var oabin=0 //output anchor bin number (in redone bins)
 
-    var bpos=0 ,cpos=rmark_dposn[0] ,dpos=rmark_dposn[1] //cpos will be >0
+    var bpos=0 ,cpos=0 ,dpos=0 //dpos -> cpos, cpos -> bpos 
 
-    var j=0 , je=rmark_dposn.length-1  //a terminator element at end
-     
-    if(minv!==minw){              //the first rmark is special
-      if(minv===-Infinity){
+    var dmk=1 , emk=rmark_dposn.length-1  //a terminator element at end
+          
+    var enter_range=0 , enter_sep=-1
+    
+    if(!similar85(lomark , minv + 1/binperval) ){//then first range is special
+      
+      //do something with range 0 ///skipping for now
+      if(rmark_cload[0]){
         rearscal.push(0)          //val scale to result ibins
         rearsepv.push(-Infinity)  //behind sep val (low anchor of range )
         rearbina.push(oabin++)    //current anchor bin 
-        //a first rear puts everything down to -inf into 1 obin 
-      }
-      //csepval would be minv but we enter after j:0 
-      j++ 
-      
-      bpos=rmark_dposn[0]
-      cpos=rmark_dposn[1]
-      dpos=rmark_dposn[2]
-      
-      ///todo if the uflow is overpop, we can drop the minw ..
-      // if minv is not infinity we can start with it
-      // precalcing ddensity and apos, involving this:
-      // var vbins=(minw-minv)*binperval //todo check invert binperval
-      // ddense=dppl/vbins 
-    }
-    
-     
-    var dppl=0, cppl=rmark_cload[j]         //cppl will be of first 
-    
-    var ddense =cppl/(cpos-bpos), cdense=ddense 
+      } 
+      //range 1 will start at bin 1, 
+      //lomark is bin1 -valperbin
+      //so the sep will work 
+      enter_range=1, enter_sep=lomark, bpos=1 
+    }else{
+      enter_range=0, enter_sep=minv, bpos=0
+    } 
             
     ///enter following loop with:
-    // cpos as anchorpos, cppl as rppl  ddense as thisdensity
-    // j as due rmark endpos & ppl
+    ///
+    /// go in with a range read in to vars, either 0 or 1
+    // bpos is anchor of entrance range, when simple =0
+    // cpos is overwritten by dpos 
+    dpos=rmark_dposn[enter_range] //this is the bin after enter_range !
     // csepval as anchor val
-    // oabin as next free output bin
-    if(see){console.log("rmark")}
+    dmk=enter_range+1  // this is the subsequent range to assess in 
+                       // relation to enter (rmark_cload[enter_range+1])
+    
+    csepval=enter_sep
+    //subsequent seps are: csepval=lomark + valperbin*cpos
+    
+    //dppl becomes cppl
+    var cppl=0, dppl=rmark_cload[enter_range] 
+    
+    //ddense becomes cdense 
+    var ddense = dppl/(dpos-bpos), cdense=ddense 
+            
+    if(see){ console.log("rmark") }
+    
     while( dpos ){   //last rmark_dposn is 0 for dpos
 
-      apos=cpos
-      cppl=0
       cdense=ddense
-      
-      //dpos and dppl exist, cppl is zeroed
           
-      do{ //
+      do{ /// /// /// /// /// /// /// ///
       
         cpos  =dpos  //extend c range
         cppl +=dppl
-      
-        dppl  =rmark_cload[j]   //end mark has Infinite lod
-        dpos  =rmark_dposn[j++] //and 0 pos
+        
+        dppl  =rmark_cload[dmk]   //end mark has Infinite lod
+        dpos  =rmark_dposn[dmk++] //and 0 pos
         ddense=dppl/(dpos-cpos) //to leave loops
+        
+        if(see)console.log("\n read dmk",dmk-1,"cpos",cpos,"dpos",dpos,"dppl",dppl,"cd dense",cdense.toFixed(3),ddense.toFixed(3))
       
-      }while( znear(cdense,ddense) )
+      }while( similar40(cdense,ddense) )
       
       //after that, a due range is set,
       //and current range is apos to cpos and cppl
 
       bsepval=csepval
-      csepval=minw + valperbin*cpos  //high end of src bin range 
+      csepval=lomark + valperbin*(cpos-1)  //high end of src bin range 
+                                           //todo refac the cpos-1
+      if(see)console.log("b>csep",bsepval.toFixed(5),csepval.toFixed(5),"cpos",cpos,"cppl",cppl)
       
-      ibins= cppl*bins_per_ppl+rmbin  //ideal bins for population 
+      if(see)console.log("ibins=cppl",cppl,"*binpp",bin_per_ppl.toFixed(5))
+      
+      var ibins= cppl*bin_per_ppl+rmbin  //ideal bins for population 
       rmbin= ibins-(ibins=Math.ceil(ibins)||1)  //carryon smartpants
       
-      valobins=(csepval-bsepval)/ibins  //range of an ideal bin
+      var valobins=(csepval-bsepval)/ibins  //range of an ideal bin
       
-      rearscal.push(1/valobins) //val scale to result ibins
-      rearsepv.push(bsepval)    //behind sep val (low anchor of range )
-      rearbina.push(oabin)      //current anchor bin 
+      if(see)console.log("valobins=(csepval",csepval.toFixed(5),"-",bsepval.toFixed(5),"bsepval)/ibins",ibins,(1/valobins).toFixed(6))
       
-      oabin+=ibins
-      
+      if(cppl){ //skip enmpty ranges
+        rearscal.push(1/valobins) //val scale to result ibins
+        rearsepv.push(bsepval)    //behind sep val (low anchor of range )
+        rearbina.push(oabin)      //current anchor bin 
+        
+        oabin+=ibins
+        cppl=0
+      } 
     }// leaves on last mark where dpos = 0 
    
     //the last rang will be up to the last bin pos marked
@@ -345,21 +403,48 @@ var Barsortfactory = function(){ return (function(){
     
     //rebin according to tallanalysis
    
+    //last one to catch overflows
+    
+    rearscal.push(0) //val scale to result ibins
+    rearsepv.push(maxv*1.000001)    //behind sep val (low anchor of range )
+    rearbina.push(oabin++)      //current anchor bin 
+    
+    //real last one to bounce end
+    rearscal.push(0)
+    rearsepv.push(NaN)  //never passes
+    rearbina.push(0) 
+   
+    if(see){
+      console.log("rearscal",zap(rearscal,function(a){return a.toFixed(3)}).join(", "))
+      console.log("rearsepv",zap(rearsepv,function(a){return a.toFixed(3)}).join(", "))
+      console.log("rearbina",rearbina.join(", "))
+    }
+    
+    if(see)console.log("Cntbnna",reduce(_cntofbin),"nbin",nbin,"cnt.len",_cntofbin.length)
+    if(see)console.log("Cntbn",_cntofbin.join(", "))
+    
     for(var ch=0; ch<nbin; ch++){ _cntofbin[ch]=0 }
              
     for(var i=st; i<ov; i++){    //got here in the end 
       var ri=1 , cval=kysval[i]
       
       while(cval>=rearsepv[ri]) ri++ //find sepval more than cval
-      var bin=(((val-rearsepv[--ri])*rearscal[ri])>>0)+rearbina[ri]
+      var bin=(((cval-rearsepv[--ri])*rearscal[ri])>>0)+rearbina[ri]
       
       kysbin[i]=bin
+      if(see&&_cntofbin[bin]===undefined) console.log("xx",cval,rearbina[ri])
+      //~ if(see&&cval>400) console.log("xb",cval,rearbina[ri])
       _cntofbin[bin]++ 
     }
    
+    if(see)console.log("Cntbnnb",reduce(_cntofbin))
+    if(see)console.log("Cntbn",_cntofbin.join(", "))
+    if(see&&_cntofbin.length>nbin)
+    { console.log("Cntbn LEN ERR",nbin,_cntofbin.length) }
   } 
 
-  function znear(a,b){ return (7.5*a/b)>>0 ==7 }
+  function similar85(a,b){ return (7.5*a/b)>>0 ==7 }
+  function similar40(a,b){ return (a/b+0.5)>>0 ==1 }
 
   function binspillage(nbin,full){ 
     
@@ -368,11 +453,13 @@ var Barsortfactory = function(){ return (function(){
       kk+=_cntofbin[i]
       var kov=kk-full
       kk-=_cntofbin[i-2] 
-
+        
       if(kov>0){ 
         spill+=kov 
-        kk+=kk>>2  //janky hack half instead of zero rates consequtive harder
+        //~ console.log("kk",kk)
+        kk-=kov
       }
+      kk=kk<0?0:kk
     }
     return spill
   }
@@ -756,6 +843,24 @@ var Barsortfactory = function(){ return (function(){
       Ar[j]=Av[Ax[j]]
     }
     return Av=Ar
+  }
+
+  function zap(Ai,f){
+    
+    var Ao=new Array(Ai.length)
+    for(var j=0,e=Ai.length;j<e;j++){
+      Ao[j]=f(Ai[j])
+    }
+    return Ao
+  }
+
+  function reduce(Ai){
+    
+    var s=0
+    for(var j=0,e=Ai.length;j<e;j++){
+      s+=Ai[j]
+    }
+    return s
   }
 
   function sort(Av,desc){

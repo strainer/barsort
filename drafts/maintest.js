@@ -28,7 +28,7 @@ function testbatch(){
   stndbench    =false//true//false//true
   sortobench   =true
   resortbench  =false//true
-  fasortbench  =true//false
+  nopostbench  =false//false
   timsortbench =true//false//true
   timsortxbench =false//true
 
@@ -83,7 +83,7 @@ function testbatch(){
   var tlens=[3000,10000,100000]
   var tlens=[10000,100000,1000000]
   var tlens=[6000]
-  var tlens=[10000]
+  var tlens=[1000,100000]
   //~ var tlens=[800000]
   //~ var tlens=[2,3,5,8,12,14,16,20,25,30,36,42,50]
   //~ var tlens=[50,200,600,1250,3000,7500,25000]
@@ -142,9 +142,9 @@ function testbatch(){
         //~ return ll++  })}}
 
 //~ , 
-     { desc:"gaussian distribution -1 to 1",
-        func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gaus()}  ) } } 
-,
+     //~ { desc:"gaussian distribution -1 to 1",
+        //~ func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gaus()}  ) } } 
+//~ ,
     { desc:"huge magnitude with gaps and duplicates",
       func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(len/100+10)),function(){ var g=Fdrandom.range(0,5000000); return Fdrandom.range(-20,20)*g*g*g} ,len ) } }
     ,
@@ -260,10 +260,10 @@ function testbatch(){
            ,tim:benchsecs
           }) 
 
-          if(fasortbench) benit({
+          if(nopostbench) benit({
             dat:tzA
            ,fnc:function(Av){ return Barsort.sortorder(Av,descen,[],nopresort,true) }
-           ,nam:'sortarder'
+           ,nam:'nopost'
            ,tim:benchsecs
           }) 
                               
@@ -379,7 +379,8 @@ function sortcheck(valz,sdic,nopre,odesc,st,ov){ //st,ov not implemented
 
   var otxt="Checked "+odesc?"descnd.":""+" order."+nopre?" (nopre) ":""
   
-  var chex=Barsort.stndindex(valz,odesc)
+  //~ var chex=Barsort.stndindex(valz,odesc) //this should be stable to check stable
+  var chex=Barsort.stndindex(valz,odesc) //this should be stable to check stable
   
   var ern=0,ersu=0, cch=-1,dch=-1, maxmis=0,miz
   
