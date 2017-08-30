@@ -1,0 +1,24 @@
+{
+  "name": "barsort",
+  "version": "0.13.0",
+  "description": "Javascripts fastest numeric sort",
+  "main": "barsort.min.js",
+  "scripts": {
+  }, 
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/strainer/barsort.git"
+  },
+  "keywords": [
+    "sort",
+    "counting sort",
+    "fast sorting",
+    "javascript sort"
+  ],
+  "author": "Andrew Strain <AndrewInput@gmail.com> (https://github.com/strainer/)",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/strainer/barsort/issues"
+  },
+  "homepage": "https://github.com/strainer/barsort#readme"
+}
