@@ -1,12 +1,24 @@
-require ('../dlib/mutil.js')
-Fdrandom=require ('../dlib/Fdrandom.js')
-Barsort=require('../barsort.js')
-Timsort=require('O:/hub/lead/node-timsort/build/timsort.min.js')
+ 
+//~ if(typeof window ==='undefined'){
+
+//require ('../dlib/mutil.js')
+
+//Fdrandom=require ('../dlib/Fdrandom.js')
+//Barsort=require('../barsort.js')
+Timsort=timsort
+
+
+
+
+//~ }
 
 Fdrandom.repot("3")
 //~ Fdrandom=Fdrandom.hot()
 
-testbatch()
+requestAnimationFrame(testbatch)
+//~ testbatch()
+
+
 var gloval=0
 
 function testbatch(){
@@ -22,10 +34,10 @@ function testbatch(){
   flawcheck=false//true//false
 
   benchsecs    =1.0
-  benchsecs    =2.7
+  //~ benchsecs    =2.7
   //~ benchsecs    =0.000001
   sortbenching =true//false//true
-  stndbench    =false//true//false//true
+  stndbench    =true//false//true//false//true
   sortobench   =true
   resortbench  =false//true
   nopostbench  =false//false
@@ -41,8 +53,8 @@ function testbatch(){
   
   descen=false//true
 
-  onerep=1000
-  thrashtest=3000
+  onerep=0//50000
+  thrashtest=0//3000
     
   if(sortbenching){
     console.log("Benchmarking "+benchsecs+" seconds each function")
@@ -63,7 +75,7 @@ function testbatch(){
   //~ var tlens=[2000]
   var tlens=[400,1200,3600,10000,40000,200000,1000000]
   //~ var tlens=[    1200   ]
-  //~ var tlens=[400,     3600      ,100000]
+  var tlens=[400,     3600      ,100000]
   //~ var tlens=[                    110000]
   //~ var tlens=[         50000             ]
   //~ var tlens=[10,100,1000,10000]
@@ -102,35 +114,35 @@ function testbatch(){
         ) 
         ,len 
     ) } }
-,
+//~ ,
 
- { desc:"descending ints",
-    func:function(len){ var ll=len; return Fdrandom.bulk( len,function(){ return --ll} ) }}
+ //~ { desc:"descending ints",
+    //~ func:function(len){ var ll=len; return Fdrandom.bulk( len,function(){ return --ll} ) }}
 
- ,
- { desc:"descending ints with maveric vals",
-    func:function(len){ var ll=len; return Fdrandom.bulk( len,function(){ return --ll+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit()*Fdrandom.rbit() )} ) }}
+ //~ ,
+ //~ { desc:"descending ints with maveric vals",
+    //~ func:function(len){ var ll=len; return Fdrandom.bulk( len,function(){ return --ll+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit()*Fdrandom.rbit() )} ) }}
 
- ,
- { desc:"ascending ints with maveric vals",
-    func:function(len){ var ll=0; return Fdrandom.bulk( len,function(){ return (ll++)+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit()*Fdrandom.rbit() )} ) }}
+ //~ ,
+ //~ { desc:"ascending ints with maveric vals",
+    //~ func:function(len){ var ll=0; return Fdrandom.bulk( len,function(){ return (ll++)+Math.round(Fdrandom.gspire()*Fdrandom.gspire()*1000*Fdrandom.rbit()*Fdrandom.rbit() )} ) }}
 
- ,{ desc:"ascending ints",
-    func:function(len){ var ll=0; return Fdrandom.bulk( len,function(){ return ll++} ) }}
-  ,
-  { desc:"ints 1 or 2",
-    func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.irange(1,2)} )  } }
-  ,
-  { desc:"ints 1 2 3",
-    func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.irange(1,3)} )  } }
-  ,
-  { desc:"ints 1 2 3 4",
-    func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.irange(1,4)} )  } }
+ //~ ,{ desc:"ascending ints",
+    //~ func:function(len){ var ll=0; return Fdrandom.bulk( len,function(){ return ll++} ) }}
+  //~ ,
+  //~ { desc:"ints 1 or 2",
+    //~ func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.irange(1,2)} )  } }
+  //~ ,
+  //~ { desc:"ints 1 2 3",
+    //~ func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.irange(1,3)} )  } }
+  //~ ,
+  //~ { desc:"ints 1 2 3 4",
+    //~ func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.irange(1,4)} )  } }
    
  ]
 
 
-  dists=[
+  distsx=[
    
    
    { desc:"oddly distributed reals from -20000000000 to 2000000000",
@@ -572,7 +584,7 @@ console.log("speedtests",real_rg.length)
 
 benit({
   dat:real_rg
- ,fnc:function(x){ Barsort.stndindex(x) }
+ ,fnc:function(x){ stndindex(x) }
  ,nam:'stndindex'
  ,tim:8
 })
@@ -587,7 +599,7 @@ benit({
 
 benit({
   dat:real_rg
- ,fnc:function(x){ Barsort.stndindex(x) }
+ ,fnc:function(x){ stndindex(x) }
  ,nam:'stndindex'
  ,tim:8
 })
