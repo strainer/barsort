@@ -64,7 +64,7 @@ function testbatch(){
     ,
     { desc:"huge magnitude with gaps and duplicates",
       func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(len/30+10)),function(){ var g=Fdrandom.range(0,5000000); return Fdrandom.range(-20,20)*g*g*g} ,len ) } }
- 
+   ,
    ,{ desc:"gaussian distribution -1 to 1",
       func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gaus()}  ) } } 
    , 

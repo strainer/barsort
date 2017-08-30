@@ -1,11 +1,11 @@
-Barsort
-=======
+Barsort.js
+==========
 
-This is the fastest numeric, stable sort function on npm. Its limitation is it works on numeric values only, unlike generic sort() which can use a comparison function such as alphanumeric or multi-element compare. 
+This is the fastest numeric, stable sort function on NPM. Its limitation is it works on numeric values only, unlike generic sort() which can use a comparison function such as alphanumeric or multi-element compare. 
 
-Barsort utilises a specialised numeric ordering function called 'barassign()' which was made for a special requirement to quickly assign fixed sized bars/buckets to elements which share similar magnitudes. It's algorithm is similar to 'counting sort' with close to O(n) time complexety. Further to its original role (creating groups of particles with similar K.E. in strainer/fancy), it is combined here with tweaked insert and merge sorts and edge case processing to create a very fast numeric sort.
+Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a very fast numeric sort.
 
-Testing across a large range of possible input distributions and sizes shows barsort is many times faster than nodes native sort and faster in most cases than a profficient implementation of Pythons optimised 'Timsort' - which is the next fastest sorting module on npm. 
+Testing across a large range of possible input distributions and sizes shows barsort is many times faster than nodes native sort and faster in most cases than a profficient javascript implementation of Pythons optimised 'Timsort' - which is for numeric input the next fastest sorting module on npm. 
 
 Usage
 -----
@@ -22,33 +22,8 @@ index_arr = Barsort.sortindex( array [,index_arr][,"descend"] )
  
 //return a sorted clone of array
 sorted_arr = Barsort.sort( array [,"descend"] )      
-
-//return 'bars' of array
-bars_array = Barsort.barassign( arr, { [options] } ) 
- 
-Barsort.barindex({ //options....
-  barnum: (int) //number_of_bars_to_allocate
- ,scores: input_array_numeric_scores 
- ,keysbar: output_array_barofinput
- /* //optional
- ,st:,ov: //section of input to index
- ,barppl: output_population_of_bars
- ,burnscore:0 //true to overwrite input 
- ,resolution: bar_oversample_factor
- ,descend: descending order
- ,secure: slower, no misordering
- ,order:
- */
-})
   
 ```	
-
-
-### Performance & stability
-
-Barsort is particularly fast especially for very large arrays and is stable for many 'organic' distributions. Extreme dynamic range in input values present a difficulty which can cause it to fail to order properly into bars. It was made for a particular use [(see spotmap)](https://github.com/strainer/fancy/wiki/spotmap) where that is not a problem. 
-
-The `fullindex` method which combines barsort, insertsort and other process to create a very fast general numeric sort, monitors its own progress and can bail out to javascripts standard sort() if it gets stuck on toxic input. In testing lately, even the most extreme test samples are not causing it to stall and bail out.
 
 ### Summary of speedtests:
 
@@ -62,7 +37,7 @@ Gaussian distribution |     100   |    10,000   | 1,000,000
  :-------------- | :-------: | :---------: | :----------
 Barsort sort     |    100 %  |    100 %    | 100 %
 Native sort      |      2 %  |      2 %    |   2 %
-Timsort sort     |    100 %  |     65 %    |  65 %
+Timsort sort     |    100 %  |     60 %    |  60 %
 
 Tough distribution |     100   |    10,000   | 1,000,000   
 :-------------- | :-------: | :---------: | :----------
@@ -71,54 +46,64 @@ Native sort     |      10 % |     10 %    |     10 %
 Timsort sort    |     100 % |     65 %    |     65 %
 
 
-These summarise very generally benchmark results in [`drafts/test_sort.log`](drafts/test_sort.log)
+These summarise very generally benchmark results in [`test_sort.log`](test_sort.log)
    
-Barsort is 2 to 3 times quicker than Timsort in many cases and significantly slower in very few.
+Barsort is about twice as fast as Timsort in many cases and significantly slower in very few.
+
 [Timsort](https://github.com/mziccard/node-timsort) is a popular multipurpose in-place sort. 
 
 
+### Barsort algorithm basics - a "counting sort"
 
-
-
-
-
-
-
-
+The input numbers are first tallied into bins as though calculating a histogram (by dividing by a suitable factor and casting to integer to get a bin number). Like this:
 ```
-eg. Separating into 4 bars,
+  for(var i=0; i<e; i++) 
+  { kysbin[i]=(binperval*(kysval[i]-minv))>>0  } 
+```
+These "counting bins" are subsequently indexed by a fewer number of "placement bins". Originally the algorithm was developed to sort data roughly into histogram bars ( without sorting *within* the bars). The "counting bins" were subdivisions of the bars to reduce spillage between the bars. So, the cumulative sum of the populations of the placement bins is calculated so that for each placement bin an anchor position in the sorting index (output) is known (for values of bins range).
 
- months_of_year : [ 1,2,3,4,5,6,7,8,9,10,11,12 ]   
- bar_of_month   : [ 0,0,0,1,1,1,2,2,2, 3, 3, 3 ]
+Like this:
+```
+  for(var bin=0; bin<nbin; bin++){
+    
+    barofbin[bin]=fillbar            //fillbar is the bar to fill currently
+    barsfill[fillbar]+=cntofbin[bin] //here it is being allocated a bins tally 
 
-or if mixed up,
- mnth : [ 1,10,12,4,7,2,5,6,11,9,3,8 ]
- bars : [ 0, 3, 3,1,2,0,1,1, 3,2,0,2 ]
+    while(barsfill[fillbar]>=fcap){   //when bar is full... 
+      barsfill[fillbar+1]+=barsfill[fillbar]-fcap
+      barsfill[fillbar]=fcap
+      fillbar++                //...fill next bar
+      nxtcap+=kysperbar-fcap   //nxtcap and kysperbar are floats
+      fcap=nxtcap >>>0         //fcap is integer (it differs for each bar)
+    }
+  } 
 ```
 
-Another function can convert a 'bar index' into a 'bar-ordering index'
+Finally some 'curious' multi-indirected lookup and updating is done for each input to use the base placement info to assign inputs their position in the sorting index.
+
+Here is that final 'curious' code: 
 ```
-months  : [ 1,10,12,4,7,2,5,6,11,9,3,8 ]
-bars    : [ 0, 3, 3,1,2,0,1,1, 3,2,0,2 ]
-bar_ord : [ 0, 9,10,3,6,1,4,5,11,7,2,8 ]
+  var bapos=new Array(nbar); bapos[0]=0 //( before_anchor_pos )
+  for(var i=0;i<nbar-1;i++){ bapos[i+1]=bapos[i]+barsfill[i] }
+
+  for(var i=st; i<ov; i++){
+    var binofel=kysbin[i] 
+    
+    //(change barofbin if barsfill is empty)
+    while( barsfill[barofbin[binofel]]===0 ){ 
+      barofbin[binofel]++ 
+    }
+    barsfill[barofbin[binofel]]--          
+    sortix[ bapos[barofbin[binofel]]++ ]=i //sort index gets ordered by bar
+  }
+  // (this is not the unpresentable part...)
 ```
-Which is like a full ordering index, except the order given inside bars
-is unsorted. When full sorting is not required, `barsort.barindex({opts...})` is
-much faster than a standard sort.
 
-This 'bar-ordered' index can be quickly rearranged by a simple insertion sort to produce a fully ordered index. This function combines these, with edge case handling resulting in a very fast and stable numeric sort:
-
-`sorted_index = Barsort.fullindex(Array)`
-
-
-
-
-
-
-
+The counting sort is used to get elements quite close to where thay should be but they need to be fine-sorted afterward. The classic "insertion sort" is perfect for fine sorting as long it never has to move any elements too far. It is combined with mergesort to cope with rare problem cases.
 
 Version History
 ---------------
 * 0.5.0 - pre release, in use and testing ...
 * 0.6.0 - repo fixed, pre release in use and testing ...
 * 0.9.0 - much developed and testing ...
+* 0.13.0 - ...much more developed and tested.

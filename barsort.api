@@ -3,5 +3,3 @@ sortorder(array Values [,bool Descend [,array Indexout [,bool Noquickies [,bool 
 sort(array Values [,bool Descend [,array Indexout [,bool Noquickies [,bool Incomplete ]]]]) //return sorted index (Indexout) of Values in ascending or Descend order. Noquickies skip check for easy sort. Incomplete skip near-neighbour ordering.  
 
 reorder(array Input, array Order) //reorders an array by another index
-
-barassign({scores:array Values,barnm:nb of bars to assign, kysbar:array Output bars [, barppl:array Size of bars ,st:start index (0),ov:over index (input.length) ,resol:accuracy of sort (barnm) ,ordinate: output indices not bar vals(false) ,burnscore:overwrite input Values (false)]}) // bespoke function returns histogram-like bar-values for elements in range of input array 'Values'

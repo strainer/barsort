@@ -1,4 +1,4 @@
-//  ~   Barsortjs - Fast full or range sorting of large arrays   ~  + 
+//                 ~ Barsortjs - Fast Number Sort ~                 + 
 /*           Copyright 2017 by Andrew Strain. No warranty           * 
  *  This program can be redistributed and modified under the terms  * 
  *  of the Apache License Version 2.0 - see LICENSE for details     * 
@@ -12,16 +12,16 @@ var Barsortfactory = function(){ return (function(){
    //a b c d e : shorthand for (a)nchor (b)efore (c)urrent (d)ue (e)nd
    //shrthnd lwrcase nms mstly. 
    
-  function version(){ return "0.11.0" }
+  function version(){ return "0.13.0" }
 
   var _cntofbin=[],_barsfill=[],_barofbin=[] //these arrays reused between calls
-  var _agewkspc=0,_genwkspc=100            //count use of these workspace arrays
+  var _agewkspc=0,_genwkspc=10             //count use of these workspace arrays
                                          //todo make these default off
-  
+  var see=0//true
+
   function barassign(arg){ //barnum:,kysval:,st:,ov:,keysbar:,barppl:
     
-    //~ see=true
-    see=false
+    //~ see=0//1//0//true
     
     var nbar   = arg.barnum  //number of bars
        ,kysval = arg.scores  //sort weights
@@ -57,10 +57,14 @@ var Barsortfactory = function(){ return (function(){
     
     var histat=wel.mean+wel.sdev*4.5, lostat=wel.mean-wel.sdev*4.5
     
+    //if numbers are too big even stats overflow, so using max_value / 10
+    if(!isFinite(histat)) histat=Number.MAX_VALUE/3
+    if(!isFinite(lostat)) lostat=-Number.MAX_VALUE/3   //-Number.MAX_VALUE
+    
     var nbin=resol*nbar, ebin=nbin-1
     
     //grow or occasionally refresh persistent workspaces
-    if( true || _cntofbin.length<nbin //todo test this, its disabled
+    if( _cntofbin.length<nbin //todo test this, its disabled
       ||( _cntofbin.length>nbin && _agewkspc++ >_genwkspc ) ){
        _agewkspc = 0
        _cntofbin = new Array(nbin) 
@@ -76,15 +80,20 @@ var Barsortfactory = function(){ return (function(){
     
     var binperval=-0, lomark=minv ,himark=maxv
     
-    //~ if(pr.descend){ minq=maxy,maxq=miny }  //do this another way later
-     if(see) console.log("histat",histat,"himark",himark,"lostat",lostat,"lomark",lomark)
+    //~ if(arg.descend){ minq=maxy,maxq=miny }  //do this another way later
     
     //potential range density savings from zooming in on spread
     var rdsav=-0
     if(histat<maxv){ rdsav+= histat-maxv }
     if(lostat>minv){ rdsav+= minv-lostat }
+    
+    //~ see=0
+    if(see) console.log("histat",histat,"himark"
+     ,himark,"lostat",lostat,"lomark",lomark,"rdsav",rdsav)
+    //~ see=0
+    
     //calib fast slow bin
-    if(!(rdsav >= (maxv-minv)*0.1)) //clause convolution excludes Infinites 
+    if(isFinite(rdsav)&&(rdsav < (maxv-minv)*0.1) ) //clause convolution excludes Infinites 
     { //do fast bin
 
       if(see) console.log("fast bin")
@@ -126,16 +135,31 @@ var Barsortfactory = function(){ return (function(){
     //tally bins
           
     for(var i=0; i<nbin; i++){ _cntofbin[i]=0 } 
+        
+    if(arg.descend){ //simple hack to do convert to descending
+      for(var i=st; i<ov; i++) 
+      { kysbin[i]=nbin-kysbin[i]-1 } 
+    }
+    
     for(var i=st;  i<ov; i++){ _cntofbin[kysbin[i]]++ } 
     
-    var binfixfactor=0 //calib improvebins 
+    var binfixfactor=0.2 //calib improvebins 
     var barfull=(nkys/nbar)>>0
     var spillo=binspillage(nbin,barfull)
+    
+    if(see){console.log(
+      "spillo",spillo,"barfull",barfull,"binfixfactor",binfixfactor)
+    }
     if( spillo > nbin*binfixfactor){
-      if(see){console.log("spillo",spillo,"barfull",barfull)}
+      if(see){console.log("improvebins")}
       if(see){console.log(wel)}
       //~ if(see){ console.log("imbins") }
-      improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, lomark,himark, binperval) 
+      var ndbin=improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, lomark,himark, binperval,arg.descend,arg.lowdiverse)
+      
+      if(ndbin<nbin){ /*change nbin*/ 
+        if(see)console.log("changing ndbin to".ndbin)
+        nbin=ndbin,ebin=ndbin-1 ,nbar=ndbin>>1 //todo calibrate nbar ratio
+      } 
       //improves kysbin and redo _cntofbin
     }else{ if(see) console.log("skip improve") }
     
@@ -150,8 +174,8 @@ var Barsortfactory = function(){ return (function(){
     
     for(var bin=0; bin<nbin; bin++){
       
-      _barofbin[bin]=fillbar            //_cntofbin bar bin goes to dest[fillbar]
-      _barsfill[fillbar]+=_cntofbin[bin]  //_barsfill[fillbar] gets population of bar bin
+      _barofbin[bin]=fillbar             //_cntofbin bar bin goes to dest[fillbar]
+      _barsfill[fillbar]+=_cntofbin[bin] //_barsfill[fillbar] gets population of bar bin
 
       while(_barsfill[fillbar]>=fcap){
         _barsfill[fillbar+1]+=_barsfill[fillbar]-fcap
@@ -176,7 +200,6 @@ var Barsortfactory = function(){ return (function(){
         var binofel=kysbin[i]
         
         while(_barsfill[_barofbin[binofel]]===0){ 
-          //_barsfill[_barofbin[binofel]]--
           _barofbin[binofel]++ 
         }
         _barsfill[_barofbin[binofel]]--
@@ -190,7 +213,6 @@ var Barsortfactory = function(){ return (function(){
         var binofel=kysval[i]
         
         while(_barsfill[_barofbin[binofel]]===0){ 
-          //~ _barsfill[_barofbin[binofel]]--
           _barofbin[binofel]++ 
         }
         _barsfill[_barofbin[binofel]]--
@@ -204,105 +226,153 @@ var Barsortfactory = function(){ return (function(){
   
 
 
-  
-  function improveBins(ov,st,nbin,kysval,kysbin, minv,maxv, lomark,himark, binperval){
+  function improveBins( 
+    ov,st,nbin,kysval,kysbin, minv,maxv
+   ,lomark,himark, binperval, descend ,lowdiverse
+  ){
      
-    var xsvals=0, xsbins=0
+    var xsvals=0, xsbins=0  //calc overpacked bins
     
-    var fulbin=(ov-st)/nbin
+    var fulbin=(ov-st)/nbin //median bin fill level
     
-    var rmark_dposn=[] ,rmark_cload=[]
+    var bingrp_dbin=[] ,bingrp_cppl=[] //mark groups of similar packed bins
     
     var j=0 
 
-    if(!similar85(lomark , minv + 1/binperval) ){ //minv is within 85% of normal
-      rmark_dposn.push(1)              //1 is a new anchor
-      rmark_cload.push(_cntofbin[j++]) //count of 0
+    if(!similar85(lomark , minv + 1/binperval) ){ //minv is not 85% of normal
+      bingrp_dbin.push(1)              //first range goes bin 0 to bin 1 (exc)
+      bingrp_cppl.push(_cntofbin[j++]) //count of bin 0
     }
-    
-    //obin is window on current/trending countobin 
-    var dbin=_cntofbin[j], bbin=dbin, obin=dbin
-    
-    //current range bin length ,total load, new range trip obin low and high
-    var cr_len=1, cr_tot=dbin, cr_lo=(obin*0.66)>>0, cr_hi=1+(obin*1.33)>>0
-    
+     
     ///loop over bins, mark endStart of ranges of separate magnitude vals
-    // for after interest in: may compress | leave | may expand | must expand
-    while( ++j < nbin ){ // (j is in dbin) 
+    ///interested in: may compress | leave | may expand | must expand
+    
+    var cr_tot=_cntofbin[j++] , cr_len=1
+
+    var cr_lo=(2*cr_tot*0.66)>>0, cr_hi=(2*cr_tot*1.33)>>0
+    
+    var dbin=_cntofbin[j] 
+    
+    var nebin=nbin-1 //keep last bingroup separate incase its special
+    
+    while( ++j < nebin ){ // (j is in dbin) 
       
-      //~ if(see)console.log(j)
+      var bbin=dbin 
       
-      bbin=dbin, dbin=_cntofbin[j]
+      cr_tot+=bbin, cr_len++
+      
+      dbin=_cntofbin[j]
       
       //a decaying measure of trending value, same scale as avg value
-      obin=(obin + (bbin + dbin)>>1)>>1 
+      var obin=bbin + dbin 
       
-      if(obin>cr_hi||obin<cr_lo){
+      if((obin>cr_hi)||(obin<cr_lo)){ //cr_tot doesnt have dbin
+        //split off cr,
+        var cj=j, dr_tot=0, dr_len=0
+        //see if bbin should be included in new crange
+        if( cr_len>1 &&((obin>cr_hi&&(bbin*2)>cr_hi)
+         || (obin<cr_lo&&(bbin*2)<cr_lo) )){ //include bbin in dr 
+          dr_tot+=bbin, dr_len++ 
+          cr_tot-=bbin, cr_len-- ,cj--
+        }
         
         //note the beginning of subsequent range (bin nbr j)
-        rmark_dposn.push(j) 
+        bingrp_dbin.push(cj)
+        //~ if(see) console.log("pushing",cj) 
         //aside the population of preceeding range 
-        rmark_cload.push(cr_tot)
+        bingrp_cppl.push(cr_tot)
 
-        var h=cr_tot-((cr_len*fulbin)>>0)
+        var h=cr_tot-((cr_len*fulbin)>>0) //note spillage
+        
         if(h>0){
           xsvals+=h
           xsbins+=cr_len
         }
 
-        cr_tot=0, cr_len=0, obin=dbin
-        cr_hi=1+(obin*1.33)>>0           //todo tune factors (and above)
-        cr_lo=(obin*0.66)>>0
+        cr_tot=dr_tot, cr_len=dr_len
+        
+        cr_hi=(2*(cr_tot+dbin+1)*1.33/(cr_len+1))>>0//todo tune factors (and above)
+        cr_lo=(2*(cr_tot+dbin)*0.80/(cr_len+1))>>0
+      
       }
       
-      cr_tot+=dbin
-      cr_len++
-      
-    }//till j>nbin
+    }//till j>nebin ...
+     //do uncompleted group: 
+    
+    if(see) console.log(
+      "left bingrp loop with cj",cj,"j",j,"cr_tot",cr_tot,"cr_len",cr_len
+      ,"dbin",dbin )
+    
+    //j-1 needs written, will be added to tail grp if it was not written
+    
+    cr_tot+=dbin, cr_len++ //accept j-1 to group
+    
+    bingrp_dbin.push(nebin)   // should be group is from cj ot j-1 to j 
+    bingrp_cppl.push(cr_tot) 
 
-    if(cr_tot){              //(this should always be true anyways)
-      rmark_dposn.push(nbin)       //this might be done in above loop
-      rmark_cload.push(cr_tot)     //but test j==e in loop may slow 10-25% 
-
-      var h=cr_tot-((cr_len*fulbin)>>0)
-      
-      if(h>0){
-        xsvals+=h
-        xsbins+=cr_len
-      }
+    var h=cr_tot-((cr_len*fulbin)>>0)
+    
+    if(h>0){
+      xsvals+=h
+      xsbins+=cr_len
     }
+   
+    //push the special end bin to its own group
+    bingrp_dbin.push(nbin) 
+    bingrp_cppl.push(_cntofbin[nebin])
     
     //push magic terminator values to rmarks also...
-    rmark_dposn.push(0)
-    rmark_cload.push(Infinity) //todo ?really infinity or other breaking value
-                               //an int might be better for array consistency
-      
+    bingrp_dbin.push(0)
+    bingrp_cppl.push(0) //todo ?really infinity or other breaking value
+                        //an int might be better for array consistency
+    
+    //~ see=0
+
     if(see){
-      console.log("cntbn",_cntofbin.join(", "))
-      console.log("dposn",rmark_dposn.join(", "))
-      console.log("cload",rmark_cload.join(", "))
+      console.log("bingrp_dbin:",bingrp_dbin.join(", "))
+      console.log("bingrp_cppl:",bingrp_cppl.join(", "))
       console.log("minv",minv,"lomark",lomark)
       console.log("maxv",maxv,"himark",himark)
       console.log("xsvals",xsvals,"xsbins",xsbins) 
-    } 
-                             
-    /// rmarks done  -  begin rearangers .....
+    }
     
+    if(see){
+      //~ console.log("cntbn",_cntofbin.join(", "))
+      var ff=0,cc=0,bb=0
+      while(bingrp_dbin[ff]){
+        var nn=bingrp_cppl[ff]; bb=cc;cc=bingrp_dbin[ff++]
+        console.log(
+          "cntbn",bb,"to",cc,":",nn,"=",_cntofbin.slice(bb,cc).join(", ")
+        )
+      }
+      
+    } 
+         
+    /// rmarks done  -  begin rearangers .....
+     
     //if low spillage skip this rebinning
     var spill_trip=0 //calib cancel rebinning
     if( xsvals < nbin*spill_trip ){ 
       if(see) console.log("low spill no rebin",xsvals)
-      return 
+      return nbin
     } //turns out doesnt need rebinned
     
+    
+    var ndbin=nbin
+    if( lowdiverse ){
+      if(nbin>50){ 
+        ndbin=42 
+        if(see) console.log("dropped ndbin ot 42")
+      }
+    }
                      // struc-of-array rearrangers:
-    var rearsepv=[]  // value which separates from prev range
-    var rearscal=[]  // targetnum of bins / full val len this range
-    var rearbina=[]  // anchor bin of this range
+    var rbinvala=[]  // value which separates from prev range
+    var rbinscal=[]  // targetnum of bins / full val len this range
+    var rbinbina=[]  // anchor bin of this range
       
     var valperbin   = 1/binperval
-    var bin_per_ppl = (nbin-1)/(ov-st) 
-    var rmbin=0.5                 // carry remainder of bin nb change 
+    var ndbin_per_ppl = (Math.floor(ndbin*0.99-2))/(ov-st) 
+    var rmbin=0.5  //  carry remainder of bin nb change 
     
     //minv, maxv are true bounds, they may be infinite 
     //lomark, himark are nominal bounds, finite 
@@ -311,92 +381,178 @@ var Barsortfactory = function(){ return (function(){
    
     var oabin=0 //output anchor bin number (in redone bins)
 
-    var bpos=0 ,cpos=0 ,dpos=0 //dpos -> cpos, cpos -> bpos 
+    var sbin_b=0 ,sbin_c=0 ,sbin_d=0 //sbin_d -> sbin_c, sbin_c -> sbin_b 
 
-    var dmk=1 , emk=rmark_dposn.length-1  //a terminator element at end
+    var dmk=1 , emk=bingrp_dbin.length-1  //a terminator element at end
           
-    var enter_range=0 , enter_sep=-1
+    var enter_rbinbin=0 , enter_rbinvala=-1
     
+    //skip special intro range
     if(!similar85(lomark , minv + 1/binperval) ){//then first range is special
       
       //do something with range 0 ///skipping for now
-      if(rmark_cload[0]){
-        rearscal.push(0)          //val scale to result ibins
-        rearsepv.push(-Infinity)  //behind sep val (low anchor of range )
-        rearbina.push(oabin++)    //current anchor bin 
+      if(bingrp_cppl[0]){
+        rbinscal.push(0)          //val scale to result ibins
+        rbinvala.push(-Infinity)  //behind sep val (low anchor of range )
+        rbinbina.push(oabin++)    //anchor of output bin 
       } 
       //range 1 will start at bin 1, 
       //lomark is bin1 -valperbin
       //so the sep will work 
-      enter_range=1, enter_sep=lomark, bpos=1 
+      enter_rbinbin=1, enter_rbinvala=lomark, sbin_c=1 
     }else{
-      enter_range=0, enter_sep=minv, bpos=0
+      enter_rbinbin=0, enter_rbinvala=minv, sbin_c=0
     } 
             
     ///enter following loop with:
     ///
     /// go in with a range read in to vars, either 0 or 1
-    // bpos is anchor of entrance range, when simple =0
-    // cpos is overwritten by dpos 
-    dpos=rmark_dposn[enter_range] //this is the bin after enter_range !
+    // sbin_b is anchor of entrance range, when simple its 0
+    // sbin_c is overwritten by sbin_d 
+    sbin_d=bingrp_dbin[enter_rbinbin] //this is the bin after enter_rbinbin !
     // csepval as anchor val
-    dmk=enter_range+1  // this is the subsequent range to assess in 
-                       // relation to enter (rmark_cload[enter_range+1])
+    dmk =enter_rbinbin+1 // this is the subsequent range to assess in 
+                       // relation to enter (bingrp_cppl[enter_rbinbin+1])
     
-    csepval=enter_sep
-    //subsequent seps are: csepval=lomark + valperbin*cpos
+    csepval=enter_rbinvala
+    //subsequent seps are: csepval=lomark + valperbin*sbin_c
     
     //dppl becomes cppl
-    var cppl=0, dppl=rmark_cload[enter_range] 
+    var cppl=0, dppl=bingrp_cppl[enter_rbinbin] 
     
     //ddense becomes cdense 
-    var ddense = dppl/(dpos-bpos), cdense=ddense 
+    var ddense = dppl/(sbin_d-sbin_c), cdense=ddense 
             
-    if(see){ console.log("rmark") }
+    //if(see){ console.log("rmark") }
     
-    while( dpos ){   //last rmark_dposn is 0 for dpos
-
-      cdense=ddense
+    var winfwd=nbin>>2 + 1  //todo calibrate
+    
+    var winppl=0, winmkc=dmk //window mark anchor, end 
+    var winbina = bingrp_dbin[enter_rbinbin], winbine=winbina //window bin anchor, end
+     
+    var cutrang = 60//todo calibrate, large is fewer rearanges
+    
+    sbin_b=sbin_c
+         
+    //first span is starting at bin 0 or bin 1 (sbin_b and sbin_c)
+    //enter_rbinbin is 0 or 1
+    //  sbin_d : spanbin_due is bingrp_dbin[enter_rbinbin]
+    //  is the e+1 of first span to place
+    //dmk : due mark is enter range + 1
+    //cppl is 0, dppl is ppl of first span to place bingrp_cppl[enter range]
+        
+    if(see){ console.log("begin make rebinners") }
+    
+    var negrps=bingrp_dbin.length
+    
+    while( dmk<negrps ){   //last bingrp_dbin is 0 for sbin_d
+      
+      if(see){ console.log("\n start rbin loop"
+        ,"sbin_b" ,sbin_b ,"sbin_c" ,sbin_c ,"sbin_d",sbin_d
+      )}
+      
+      //sbin_b is here: old sbin_c (prev range anchor bin)
+      //sbin_c is here:
+      //  the e+1 bin of the last placed span
+      // &the anchor of the new start span
+      //sbin_d is here:the end+1 bin of the next to place span
+      //it was not accepted to the previous 
+      //it becomes the growing end of this span
+     
+      winppl  -= cppl            //last placed range ppl, - from window
+      winbina += sbin_c - sbin_b //last placed range length, step wbin anchor
+      
+      cppl=0, sbin_b=sbin_c
+      
+      var wreach= sbin_d+winfwd ; wreach = wreach<nebin ? wreach:nebin
+      
+      //spanbindue is end of current population
+      //if winfwd was 0 ...
+      //winbine moves to end of span after span ppl is added
+      //minbina will move forward from sbin_bc..
+      //this should track a window beginning at sbin_d 
+      while( winbine<wreach ){    //reads 1/4 of array ahead
+        winppl  += bingrp_cppl[winmkc] //winmkc starts as enterrange
+        winbine  = bingrp_dbin[winmkc++] //winmkc only changes here
+      }                                 //winbina starts as anchor of next candidate 
+      
+      var wdense=winppl/(winbine-winbina), cdense=ddense
+      
+      if(see){ console.log("local levels:"
+        ,"wreach,",wreach,"winbina" ,winbina ,"winbine" ,winbine ,"winppl,",winppl
+      )}
           
       do{ /// /// /// /// /// /// /// ///
-      
-        cpos  =dpos  //extend c range
-        cppl +=dppl
         
-        dppl  =rmark_cload[dmk]   //end mark has Infinite lod
-        dpos  =rmark_dposn[dmk++] //and 0 pos
-        ddense=dppl/(dpos-cpos) //to leave loops
+        //advances sbin to end of current scale_range 
+        //must not extend range to last if last is a special
+        //overflow range
+      
+        sbin_c= sbin_d  //sbin_c=d can only be less 
+        cppl += dppl    //than special end bin here
         
-        if(see)console.log("\n read dmk",dmk-1,"cpos",cpos,"dpos",dpos,"dppl",dppl,"cd dense",cdense.toFixed(3),ddense.toFixed(3))
+        dppl   = bingrp_cppl[dmk]   //end mark has Infinite load
+        sbin_d = bingrp_dbin[dmk++] //and 0 pos
+        
+        cdense=cppl/(sbin_c-sbin_b) //this ranges density
+        ddense=dppl/(sbin_d-sbin_c) //the due spans density
+        
+        // cdense is close to ddense never split
+        var rbindev = Math.abs((cdense-ddense)/(cdense+ddense+1))
+        
+        // cdense is close to wdense tend not to split
+        rbindev*= Math.abs((cdense-wdense)/(cdense+wdense+1))+0.7//todo calib 
+  
+        // if duration is low tend not to split
+        rbindev *= Math.sqrt(4+sbin_d-sbin_b) //todo calib
+
+        if(see)console.log(
+          " dmk",dmk-1
+         ,"sbin _c",sbin_c,"_d",sbin_d,"  dppl",dppl
+         ," dense c",cdense.toFixed(3),"d",ddense.toFixed(3),"w",wdense.toFixed(3)
+         ," rbindev",rbindev.toFixed(3)
+        )
       
-      }while( similar40(cdense,ddense) )
+      }while( rbindev<cutrang && dmk<negrps )
       
-      //after that, a due range is set,
-      //and current range is apos to cpos and cppl
+      if(see&&rbindev<cutrang){
+        console.log(":bunched bins sbin_b",sbin_b,"to sbin_c",sbin_c)
+      }
+      if(see&&dmk==negrps)console.log("near end of bins",dmk)
+      //make it a little harder to split as number increases
+      cutrang*=1.1 //todo calibrate
+      
+      //after that, a due range is sbin_c (inc) to sbin_d (exc), and dppl
+      //and current range is: sbin_b(inc) to sbin_c(exc), and cppl
 
       bsepval=csepval
-      csepval=lomark + valperbin*(cpos-1)  //high end of src bin range 
-                                           //todo refac the cpos-1
-      if(see)console.log("b>csep",bsepval.toFixed(5),csepval.toFixed(5),"cpos",cpos,"cppl",cppl)
+      csepval=lomark + valperbin*(sbin_c-1)  //high end of src bin range 
+                                           //todo refac the sbin_c-1
+      if(see)console.log("bsepv",bsepval.toFixed(7),"to csepv",csepval.toFixed(7),"cppl",cppl)
+      i
+      if(see)console.log("ibins = cppl",cppl,"* ndbinpp",ndbin_per_ppl.toFixed(5))
       
-      if(see)console.log("ibins=cppl",cppl,"*binpp",bin_per_ppl.toFixed(5))
-      
-      var ibins= cppl*bin_per_ppl+rmbin  //ideal bins for population 
+      var ibins= cppl*ndbin_per_ppl+rmbin  //ideal bins for population 
       rmbin= ibins-(ibins=Math.ceil(ibins)||1)  //carryon smartpants
+      
+      //~ ibins=Math.ceil(ibins)
+      if(see) console.log("rmbin",rmbin,"ibins",ibins)
       
       var valobins=(csepval-bsepval)/ibins  //range of an ideal bin
       
       if(see)console.log("valobins=(csepval",csepval.toFixed(5),"-",bsepval.toFixed(5),"bsepval)/ibins",ibins,(1/valobins).toFixed(6))
       
-      if(cppl){ //skip enmpty ranges
-        rearscal.push(1/valobins) //val scale to result ibins
-        rearsepv.push(bsepval)    //behind sep val (low anchor of range )
-        rearbina.push(oabin)      //current anchor bin 
-        
+    
+      if(see)console.log("writing oabin",oabin,"bsep",bsepval,"scal",1/valobins,"\n")
+      rbinvala.push(bsepval)    //behind sep val (low anchor of range )
+      rbinbina.push(oabin)      //current anchor bin 
+
+      if(cppl){
+        rbinscal.push(1/valobins) //val scale to result ibins
         oabin+=ibins
-        cppl=0
-      } 
-    }// leaves on last mark where dpos = 0 
+      }else{ rbinscal.push(0) }
+      
+    }// leaves on last mark where sbin_d = 0 
    
     //the last rang will be up to the last bin pos marked
     //the sep val of the last bin is not infinite
@@ -404,65 +560,162 @@ var Barsortfactory = function(){ return (function(){
     //rebin according to tallanalysis
    
     //last one to catch overflows
-    
-    rearscal.push(0) //val scale to result ibins
-    rearsepv.push(maxv*1.000001)    //behind sep val (low anchor of range )
-    rearbina.push(oabin++)      //current anchor bin 
-    
-    //real last one to bounce end
-    rearscal.push(0)
-    rearsepv.push(NaN)  //never passes
-    rearbina.push(0) 
-   
-    if(see){
-      console.log("rearscal",zap(rearscal,function(a){return a.toFixed(3)}).join(", "))
-      console.log("rearsepv",zap(rearsepv,function(a){return a.toFixed(3)}).join(", "))
-      console.log("rearbina",rearbina.join(", "))
+    //~ see=0
+    if(see){ console.log(
+      " exit rbin loop oabin",oabin,"cppl",cppl,"sbin_d",sbin_d,
+    "\n bingrplen",bingrp_dbin.length  ) 
     }
     
-    if(see)console.log("Cntbnna",reduce(_cntofbin),"nbin",nbin,"cnt.len",_cntofbin.length)
-    if(see)console.log("Cntbn",_cntofbin.join(", "))
+    rbinscal.push(0) //val scale to result ibins
+    rbinvala.push(himark) //behind sep val (low anchor of range )
+    rbinbina.push(oabin++)      //current anchor bin 
     
-    for(var ch=0; ch<nbin; ch++){ _cntofbin[ch]=0 }
+    //real last one to bounce end
+    rbinscal.push(0)
+    rbinvala.push(NaN)  //never passes
+    rbinbina.push(0) 
+   
+    
+    
+    if(see){
+      console.log("rbinscal",zap(rbinscal,function(a){return a}).join(", "))
+      console.log("rbinvala",zap(rbinvala,function(a){return a}).join(", "))
+      console.log("rbinbina",rbinbina.join(", "))
+    }
+    
+    //~ see=0
+    
+    /////////////////////////
+    if(see)console.log("Cntbnna",reduce(_cntofbin),"nbin",nbin,"cnt.len",_cntofbin.length)
+    if(see)console.log("Cntbn",joinendsfixedwidth(_cntofbin,0))
+    
+    
+    for(var ch=0; ch<ndbin; ch++){ _cntofbin[ch]=0 }
+
+    var ccc=0
              
     for(var i=st; i<ov; i++){    //got here in the end 
       var ri=1 , cval=kysval[i]
       
-      while(cval>=rearsepv[ri]) ri++ //find sepval more than cval
-      var bin=(((cval-rearsepv[--ri])*rearscal[ri])>>0)+rearbina[ri]
+      while(cval>=rbinvala[ri]) ri++ //find sepval more than cval
+      var bin=(((cval-rbinvala[--ri])*rbinscal[ri])>>0)+rbinbina[ri]
       
       kysbin[i]=bin
-      if(see&&_cntofbin[bin]===undefined) console.log("xx",cval,rearbina[ri])
-      //~ if(see&&cval>400) console.log("xb",cval,rearbina[ri])
-      _cntofbin[bin]++ 
+       
+      if(see&&(_cntofbin[bin]===undefined||bin>=nbin||bin<0)){
+        ccc++
+        if(ccc<20){
+          console.log("rebad key",i,"val",cval,"rebin ak",rbinbina[ri],"rebin",bin,"ndbin",ndbin)
+          console.log(" rbinvala",rbinvala[ri],"rbinscal",rbinscal[ri])
+          console.log(" rbinvale",rbinvala[ri+1],"rbinescal",rbinscal[ri+1])
+        }
+      }
+      //~ if(see&&cval>400) console.log("xb",cval,rbinbina[ri])
+      //~ _cntofbin[bin]++ 
     }
+    
+       
+    if(descend){ //simple hack to do convert to descending
+      ndbin--
+      for(var i=st; i<ov; i++) 
+      { kysbin[i]=ndbin-kysbin[i] }
+      ndbin++ 
+    }
+    
+    var maxbin=0
+    for(var i=st; i<ov; i++){ 
+      if(see){
+        if(maxbin<kysbin[i]) maxbin=kysbin[i]
+      }
+      _cntofbin[kysbin[i]]++ 
+    } 
    
-    if(see)console.log("Cntbnnb",reduce(_cntofbin))
-    if(see)console.log("Cntbn",_cntofbin.join(", "))
+    if(see)console.log("maxbin",maxbin,"cnt",_cntofbin[maxbin])
+    if(see)console.log("reduce Cntbn",reduce(_cntofbin))
+    
+    if(see)console.log("reCntbn",joinendsfixedwidth(_cntofbin,0))
     if(see&&_cntofbin.length>nbin)
     { console.log("Cntbn LEN ERR",nbin,_cntofbin.length) }
+    
+    
+    return ndbin
   } 
+
+    
+  function islowdiverse(kysval){
+     
+    var nkys=kysval.length 
+    var cj=0, qn=Math.floor(kysval.length/10)
+
+    var v0=kysval[0],v1,v2,v3
+
+    while(++cj<nkys){
+      if( kysval[cj]!==v0 ){ v1=kysval[cj]; break }
+    }
+    while(++cj<nkys){
+      if( kysval[cj]!==v0
+       && kysval[cj]!==v1 ){ v2=kysval[cj]; break }
+    }
+    while(++cj<nkys){
+      if( kysval[cj]!==v0
+       && kysval[cj]!==v1
+       && kysval[cj]!==v2 ){ v3=kysval[cj]; break } 
+    }
+    while(++cj<nkys){
+      if( kysval[cj]!==v0
+       && kysval[cj]!==v1
+       && kysval[cj]!==v2 
+       && kysval[cj]!==v3 ){ if(--qn==0) break }
+    }
+
+    if(cj>=nkys){
+      //low diversity input detected
+      //reduce nbar andor nbins
+      if(see)console.log("is low diversity",cj,qn)
+
+      return true
+    }
+
+    if(see)console.log("is not low diversity")
+    return false
+  }
+
+  function joinendsfixedwidth(Ar,fx){
+    
+    var an=Ar.length
+    var en=ntain(Math.floor(an/3),0,50)
+    var s=zap(Ar.slice(0,en),function(a){return a.toFixed(fx)}).join(", ")
+        + ",...," + zap(Ar.slice((an-en)>>1,(an+en)>>1),function(a){return Number(a).toFixed(fx)}).join(", ")
+        + ",...," + zap(Ar.slice(an-en,an),function(a){return Number(a).toFixed(fx)}).join(", ")
+        
+    return s
+  }
 
   function similar85(a,b){ return (7.5*a/b)>>0 ==7 }
   function similar40(a,b){ return (a/b+0.5)>>0 ==1 }
 
   function binspillage(nbin,full){ 
     
-    var spill=0 , kk=_cntofbin[0]+_cntofbin[1] 
+    //~ if(see) console.log("_cnt00:",_cntofbin.join(","))
+    var spill=0 , duoppl=_cntofbin[0]+_cntofbin[1] 
     for(var i=2; i<nbin; i++){ 
-      kk+=_cntofbin[i]
-      var kov=kk-full
-      kk-=_cntofbin[i-2] 
+      
+      duoppl+=_cntofbin[i] //(trio ppln)
+      var kov=duoppl-full
         
       if(kov>0){ 
-        spill+=kov 
-        //~ console.log("kk",kk)
-        kk-=kov
+        spill+=kov*kov 
+        //~ if(see)console.log("duoppl",duoppl,"kov",kov)
+        duoppl-=kov
       }
-      kk=kk<0?0:kk
+      
+      duoppl-=_cntofbin[i-2] 
+      duoppl=duoppl<0?0:duoppl
+
     }
-    return spill
+    return Math.sqrt(spill)>>0
   }
+  
   
   function welfordscan(Ai,st,ov){
     
@@ -475,7 +728,7 @@ var Barsortfactory = function(){ return (function(){
       
       if (qvl>=maxv)
       { maxv=qvl ; if(qvl === Infinity) continue } 
-      else if (qvl<minv)
+      else if (qvl<=minv)
       { minv=qvl ; if(qvl === -Infinity) continue }
           
       //calc variance.. welfords alg
@@ -484,7 +737,8 @@ var Barsortfactory = function(){ return (function(){
       mean += delt / smnm
       delt2 = qvl  - mean
       me2  += delt * delt2	
-    
+      
+      //~ console.log(smnm,delt,delt2,delt*delt2,(delt/smnm)*delt2)
     }
     
     var sdev= smnm>1? Math.sqrt( me2/(smnm-1) ) : 0
@@ -494,7 +748,7 @@ var Barsortfactory = function(){ return (function(){
    
 
   function barassign_secure(kysval,nbar,barppl,arg){
-    var ixkeys=sortorder(kysval,[],0,0,arg.descend)  //unoptimal without st,ov
+    var ixkeys=sortorder(kysval,arg.descend,[],0,0)  //unoptimal without st,ov
     ///todo this should leave original kysval untouched
     if(arg.arrange) return ixkeys
 
@@ -517,10 +771,12 @@ var Barsortfactory = function(){ return (function(){
   
   function sortorder(Av,desc,Ax,skiptry,skipfix){
     
-    see=0//1//false//true//false//true//false//true
+    //~ see=0//1//1//1//false//true//false//true//false//true
     if(see)console.log("doing sortorder",desc)
     
     var flipp=false, Alen=Av.length, minlen=10, hard=false
+    var lowdiverse=false
+    
     if((!skiptry)&&Alen>minlen){
       
       var up=0,dw=0, samp=ntain(Alen>>>5,minlen)  // /64
@@ -539,7 +795,11 @@ var Barsortfactory = function(){ return (function(){
       
       var threshup=0.3 //1 maxout -1 neg-out
       if(upness>threshup){ flipp=true; }
-      if((up*3>samp)&&(dw*3>samp)) hard=true
+      if((up*3>samp)&&(dw*3>samp)){ 
+        hard=true
+      }else{
+        lowdiverse=islowdiverse(Av)	
+      }
     }
     if(see)console.log ("hard:",hard,"flipp:",flipp)
     if( !(Ax&&Ax.length>=Alen) ){ Ax = ixArray(Av,flipp) }
@@ -547,7 +807,7 @@ var Barsortfactory = function(){ return (function(){
     if(desc) { compar=lessthan } else { compar=morethan }
     var st=0
     ////////////////////////////////// take away true!!!!!!!!!!!!!!!!!!!!!
-    if((!skiptry)&&!(hard&&(Alen>80))){ //try insertsort
+    if( (!(skiptry||lowdiverse))&&!(hard&&(Alen>80)) ){ //try insertsort
       if(see) console.log ("easysoul sorting")
       
       var bottle=Math.ceil(Alen/10000)+2 //?
@@ -563,8 +823,8 @@ var Barsortfactory = function(){ return (function(){
       if(see)console.log("doing barsort")
       
       var barlen=14, reso=2 //these values mined, mebbie 16/4 or other better?
-      if(Av.length<1500000){ barlen=10}
-      if(Av.length<300000){ barlen=6 }
+      if(Av.length<1500000){ barlen=10 }
+      if(Av.length< 300000){ barlen=6  }
       
       var bars=Math.ceil(Av.length/barlen)+1 
       //~ var barppl=new Array(bars)
@@ -581,6 +841,7 @@ var Barsortfactory = function(){ return (function(){
        ,descend:desc
        ,secure:false
        ,arrange:true
+       ,lowdiverse:lowdiverse
       })
             
     }else if( !(Ax&&Ax.length>=Av.length) ){ Ax = ixArray(Av,flipp) }
@@ -608,17 +869,17 @@ var Barsortfactory = function(){ return (function(){
   }
   
   
-  function stndindex(Ai,desc,Ax){
+  function stndindex(Av,desc,Ax){
     
-    if(!Ax||Ax.length<Ai.length){
-      Ax=new Array(Ai.length)
-      for (var i=0,e=Ai.length; i<e; i++) Ax[i] = i
+    if(!Ax||Ax.length<Av.length){
+      Ax=new Array(Av.length)
+      for (var i=0,e=Av.length; i<e; i++) Ax[i] = i
     }
     
     if(desc){
-      Ax.sort( function (b, a) { return Ai[a] - Ai[b] } )
+      Ax.sort( function (b, a) { return Av[a] - Av[b] } )
     }else{
-      Ax.sort( function (a, b) { return Ai[a] - Ai[b] } )
+      Ax.sort( function (a, b) { return Av[a] - Av[b] } )
     }
     return Ax
   }
@@ -641,35 +902,62 @@ var Barsortfactory = function(){ return (function(){
     return Ar
   } 
     
-  var see=true
+  
+    
+  function longindex(Av,desc,Ax){
+    
+    //see=1
+    
+    if(!Ax||Ax.length<Av.length){
+      Ax=new Array(Av.length)
+      for (var i=0,e=Av.length; i<e; i++) Ax[i] = i
+    }
+
+    if(desc) { compar=lessthan } else { compar=morethan }
+    longsort(Av,Ax,250000000)
+    return Ax
+  }
   
   function longsort(Av,Ax,bottle){
-    
+    mergcach=[] //reset this global
     var Alen=Av.length ,mergs=bottle*(Alen+10000) 
-     
+    
     var tail=30 ,block=250
     var parts=[0], uflow=0, umost=1000, umo=500
     
     var first=ntain(150,0,Alen), st=first ,nx,snip
     
-    inpairsort(Av,Ax,1,first,0)
+    var rres=inpairsort(Av,Ax,1,first,0)
+    //console.log("res was",rres)
+    
+    //like insertsort
+    
      
     while ( st < Alen){ 
      
+      //~ if(see)console.log("st",st)
+    
       nx=ntain(st+block,0,Alen)
       
       snip=inpairsort(Av,Ax,st,nx,st-tail)
       
-      if(snip){ 
+      if(snip){ //insertsort backflowed
         
-        if((nx-uflow)>umost){ uflow+=umo }
+        if((nx-uflow)>umost){ uflow+=umo } //move uflow
         
         var k=minglemerge(Av,Ax,st-tail,nx,uflow )
         
+        //~ if(see)console.log(
+          //~ "ming k",k,"s",st-tail,"nx",nx,"uflow",uflow
+        //~ )
+        
         mergs-=Math.sqrt(snip)*k 
-        if(mergs<0){ return false }
+        if(mergs<0){ return false } //some crazed loopout
+        
         if(k>uflow-(st-tail)){ //note new partition
+          //console.log("part",uflow)
           if(parts[parts.length-1]!==uflow){
+            //console.log("wpart",uflow)
             parts.push(uflow)
           }
         } 
@@ -678,16 +966,17 @@ var Barsortfactory = function(){ return (function(){
       st=nx 
     }
     
-    if(parts.length>1){
-      var cpr=2//parts.length
-      var bp,cp,dp=parts[1], qp
+    if(parts.length>1){ // partitions must be revisited
+      
+      var cpr=1//parts.length
+      var bp,cp,dp=parts[0], qp
       
       var dpars=parts.length-1, apars=parts.length
       while(dpars){
         
         while(parts[ cpr ]===0){ cpr++ } //skip zeroed
         if(cpr>=apars){ break }
-        
+
         bp = dp                                    //  100
         cp = parts[ cpr ]; parts[ cpr ]=0          //  200
         while(parts[ cpr ]===0){ cpr++ }           //skip zeroed
@@ -696,8 +985,11 @@ var Barsortfactory = function(){ return (function(){
         qp=cpr++
         
         var k=minglemerge(Av,Ax ,cp,dp,bp ) //test see if this is req
+        
+        //console.log("mingled cp",cp,"dp",dp,"bp",bp,"k",k)
 
         while(parts[ cpr ]===0){ cpr++ }
+        
         if(qp!==apars){
           dp = (cpr<apars)? parts[ cpr++ ] : Alen
           cp = parts[ qp ]; parts[qp]=0
@@ -764,17 +1056,17 @@ var Barsortfactory = function(){ return (function(){
   }
 
 
-  var submcach=[] 
+  var mergcach=[] 
 
   function sparsemerge(Av,Ax,s,e,b){
    
-    if(e-s>submcach.length) submcach=new Array(ntain((e-s)*3,0,Av.length))
-    for(var h=0,j=s,ee=e-s;h<ee; ) submcach[h++]=Ax[j++] 
+    if(e-s>mergcach.length) mergcach=new Array(ntain((e-s)*3,0,Av.length))
+    for(var h=0,j=s,ee=e-s;h<ee; ) mergcach[h++]=Ax[j++] 
     
     var wrpos=e-1, clonx=e-s-1, hipt=s-1, bhipt=hipt, lep=1 
 
     ///skip to first insert 
-    while( (clonx>=0) && !compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is not jdest
+    while( (clonx>=0) && !compar( Av[Ax[hipt]],Av[mergcach[clonx]] ) ) // is not jdest
     { clonx--,wrpos-- } 
     
     while(clonx>=0)// ix of copyel to place
@@ -782,11 +1074,11 @@ var Barsortfactory = function(){ return (function(){
       lep=1,bhipt=hipt
       
       ///insert first chunk
-      while( (hipt>=b) && compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is not jdest
+      while( (hipt>=b) && compar( Av[Ax[hipt]],Av[mergcach[clonx]] ) ) // is not jdest
       { hipt=hipt-(lep++) } 
       if(hipt++<b){ hipt=b } 
       
-      while( (hipt<=bhipt) && !compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is jdest
+      while( (hipt<=bhipt) && !compar( Av[Ax[hipt]],Av[mergcach[clonx]] ) ) // is jdest
       { hipt++ }  //careful with stability here, get equal high as poss
       hipt--
       
@@ -795,7 +1087,7 @@ var Barsortfactory = function(){ return (function(){
       }
       
       wrpos-=(bhipt-hipt)
-      Ax[wrpos]=submcach[clonx]
+      Ax[wrpos]=mergcach[clonx]
       wrpos--,clonx--
                           
     }//while
@@ -803,23 +1095,23 @@ var Barsortfactory = function(){ return (function(){
     return wrpos<b?s-wrpos+1:s-wrpos //merge underflowed
   } 
   
-  
+  //merge s-e with section behind them, back to b 
   function minglemerge(Av,Ax,s,e,b){
      
-    if(e-s>submcach.length) submcach=new Array(ntain((e-s)*3,0,Av.length))
-    for(var h=0,j=s,ee=e-s;h<ee; ) submcach[h++]=Ax[j++] 
+    if(e-s>mergcach.length) mergcach=new Array(ntain((e-s)*3,0,Av.length))
+    for(var h=0,j=s,ee=e-s;h<ee; ) mergcach[h++]=Ax[j++] 
     
     var wrpos=e-1, clonx=e-s-1, hipt=s-1, bhipt=hipt, lep=1 
 
     ///skip to first insert 
-    while( (clonx>=0) && !compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is not jdest
+    while( (clonx>=0) && !compar( Av[Ax[hipt]],Av[mergcach[clonx]] ) ) // is not jdest
     { clonx--,wrpos-- } 
     
     while(clonx>=0)// ix of copyel to place
     {
       bhipt=hipt
       
-      while( (hipt>=b) && compar( Av[Ax[hipt]],Av[submcach[clonx]] ) ) // is not jdest
+      while( (hipt>=b) && compar( Av[Ax[hipt]],Av[mergcach[clonx]] ) ) // is not jdest
       { hipt-- } 
    
       for(var c=bhipt,d=c+wrpos-bhipt;  c>hipt; ){
@@ -827,12 +1119,13 @@ var Barsortfactory = function(){ return (function(){
       }
       
       wrpos-=(bhipt-hipt)
-      Ax[wrpos]=submcach[clonx]
+      Ax[wrpos]=mergcach[clonx]
       wrpos--,clonx--
                 
     }//while
 
-    return wrpos<b?s-wrpos+1:s-wrpos //merge underflowed
+    return wrpos<b? s-wrpos+1 : s-wrpos //merge underflowed
+    //returns ... dunnonow...
   } 
    
     
@@ -845,7 +1138,7 @@ var Barsortfactory = function(){ return (function(){
     return Av=Ar
   }
 
-  function zap(Ai,f){
+  function zap(Ai,f){ //map
     
     var Ao=new Array(Ai.length)
     for(var j=0,e=Ai.length;j<e;j++){
@@ -874,8 +1167,9 @@ var Barsortfactory = function(){ return (function(){
     ,reorder   : reorder
     ,longsort  : longsort
     
-    ,stndindex : stndindex
-    ,insertndx : inpairsort
+    ,stndindex : longindex//stndindex
+    ,longindex : longindex
+    ,insertndx : inpairsortx
     
     ,version   : version 
   }
