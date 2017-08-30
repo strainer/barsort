@@ -1,7 +1,7 @@
-Barsort.js
-==========
+Barsort
+=======
 
-This is the fastest numeric, stable sort function on NPM. Its limitation is it works on numeric values only, unlike generic sort() which can use a comparison function such as alphanumeric or multi-element compare. 
+This is the fastest numeric, stable sort function on NPM. It is specialised to work on numeric input only.
 
 Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a very fast numeric sort.
 

@@ -1,8 +1,8 @@
 Barsort.js - a number sorting project gone haywire
 
-This javascript module sorts numbers around twice as quick as the famously fast "Timsort" It is a stable sort and it produces primarily a sorting index. 
+This javascript module sorts numbers around twice as quick as the famously fast [Timsort](https://en.wikipedia.org/wiki/Timsort) It is a stable sort and it produces primarily a sorting index. 
 
-Barsort performs great and is finally passing its tests, but there is one remaining problem with it --much of its source code is completely haywire. The expansive challenge of optimising a general purpose sort has combined here with my self-indulgent code style, impatience and some personal frailties, to produce possibily my most unpresentable work yet :
+Barsort performs great and is finally passing its tests, but there is one remaining problem with it --much of its [source code](https://github.com/strainer/barsort/blob/173ae3fe7c81ecf14d5dd525a320c8bc5d941b1b/barsort.js) is completely haywire. The expansive challenge of optimising a general purpose sort has combined here with my self-indulgent code style, impatience and some personal frailties, to produce possibily my most unpresentable work yet :
 
 ### Barsort algorithm basics - a "counting sort"
 
@@ -58,4 +58,4 @@ Timsort is also known as "Pythons sort" and "probably THE fastest in-memory sort
 
 It is notable that Timsort can sort strings and other data while Barsort will only sort numbers. Timsort sorts inplace and Barsort primarily sorts an index, but these latter differences only effect their relative performace on test cases which required very little actual sorting.
 
-What motivated the development of Barsort is that it is basically about twice as fast as the Javascript port of Timsort on common organic numeric distributions such as gaussian and equal random distribution. This does make Barsort potentially one of the fastest general purpose numeric sorts ever cobbled together, despite large parts of its source code having been abandoned in a possibily unredeemable state. 
+What motivated the development of Barsort is that it is basically about [twice as fast](test_sort.log) as the Javascript port of [Timsort](https://github.com/mziccard/node-timsort) on common organic numeric distributions such as gaussian and equal random distribution. This does make Barsort potentially one of the fastest general purpose numeric sorts ever cobbled together, despite large parts of its source code having been abandoned in a possibily unredeemable state. 
