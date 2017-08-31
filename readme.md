@@ -1,7 +1,7 @@
 Barsort
 =======
 
-The fastest numeric, stable sort function on NPM. Specialised to work on numeric input only.
+Possibly the fastest general purpose and stable numeric sort function on NPM. Specialised to work on numeric input only (integers and reals).
 
 Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a very fast numeric sort.
 
@@ -50,7 +50,11 @@ These summarise very generally benchmark results in [`test_sort.log`](test_sort.
    
 Barsort is about twice as fast as Timsort in many cases and significantly slower in very few.
 
+### See also
+
 [Timsort](https://github.com/mziccard/node-timsort) is a popular multipurpose in-place sort. 
+
+[LSD Radix Sort](https://duvanenko.tech.blog/2017/06/15/faster-sorting-in-javascript/) is 3x Barsort speed but is limited to unsigned integers and can not arrange an index.
 
 
 ### Barsort algorithm basics - a "counting sort"
