@@ -18,7 +18,7 @@ npm install --save barsort
 Barsort=require('./barsort.js')
  
 //return a sorted index to array ([opt. params])
-index_arr = Barsort.sortindex( array [,index_arr][,"descend"] )  
+index_arr = Barsort.sortorder( array [,index_arr][,"descend"] )  
  
 //return a sorted clone of array
 sorted_arr = Barsort.sort( array [,"descend"] )      
