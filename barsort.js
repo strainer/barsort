@@ -1169,7 +1169,7 @@ var Barsortfactory = function(){ return (function(){
     
     ,stndindex : longindex//stndindex
     ,longindex : longindex
-    ,insertndx : inpairsortx
+    ,insertndx : inpairsort
     
     ,version   : version 
   }
