@@ -5,6 +5,15 @@ Barsort=require('../barsort.js')
 
 
 
+var g=[2,3,4,6,7,8,9]
+
+var b= new Uint32Array(g)
+
+console.log(b)
+
+return
+
+
 
 ascending10RandomEndInt = function (n) {
   var arr = [];

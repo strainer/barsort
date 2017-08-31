@@ -1,10 +1,14 @@
 require ('../dlib/mutil.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
 Barsort=require('../barsort.js')
-Timsort=require('O:/hub/lead/node-timsort/build/timsort.min.js')
+//~ Timsort=require('O:/hub/lead/node-timsort/build/timsort.min.js')
 
 Fdrandom.repot("3")
 //~ Fdrandom=Fdrandom.hot()
+
+//~ var a=[-222222222222222222,0.0000000000000001,1.1,1.2,1.1,1.1,1.1]
+//~ console.log(radixSortLSD(a,Array))
+//~ return
 
 testbatch()
 var gloval=0
@@ -22,14 +26,15 @@ function testbatch(){
   flawcheck=false//true//false
 
   benchsecs    =1.0
-  benchsecs    =2.7
+  //~ benchsecs    =2.7
   //~ benchsecs    =0.000001
   sortbenching =true//false//true
-  stndbench    =false//true//false//true
+  stndbench    =true//false//true//false//true
   sortobench   =true
+  radixbench   =true
   resortbench  =false//true
   nopostbench  =false//false
-  timsortbench =true//false//true
+  timsortbench =false//true//false//true
   timsortxbench =false//true
   
   canceltestearly = true
@@ -41,8 +46,8 @@ function testbatch(){
   
   descen=false//true
 
-  onerep=1000
-  thrashtest=3000
+  onerep=0//1000
+  thrashtest=0//3000
     
   if(sortbenching){
     console.log("Benchmarking "+benchsecs+" seconds each function")
@@ -61,7 +66,7 @@ function testbatch(){
 
   //~ var tlens=[300,1000,3000,10000,50000,250000,1000000] 
   //~ var tlens=[2000]
-  var tlens=[400,1200,3600,10000,40000,200000,1000000]
+  var tlens=[400,1200,3600,10000,40000,200000]
   //~ var tlens=[    1200   ]
   //~ var tlens=[400,     3600      ,100000]
   //~ var tlens=[                    110000]
@@ -130,7 +135,7 @@ function testbatch(){
  ]
 
 
-  dists=[
+  distss=[
    
    
    { desc:"oddly distributed reals from -20000000000 to 2000000000",
@@ -288,6 +293,13 @@ function testbatch(){
           })
           
           
+          if(radixbench) benit({
+            dat:tzA
+           ,fnc:function(Av){ return radixSortLSD(Av,Array) }
+           ,nam:'radixLSD'
+           ,tim:benchsecs
+          }) 
+            
           if(sortobench) benit({
             dat:tzA
            ,fnc:function(Av){ return Barsort.sortorder(Av,descen,[],nopresort,nopostsort) }
@@ -628,3 +640,61 @@ function benit(p){
     }
     return Ax
   }
+
+
+
+
+function extractDigit(a, bitMask, shiftRightAmount) {
+  var digit = (a & bitMask) >>> shiftRightAmount; // extract the digit we are sorting based on
+  return digit;
+};
+
+// June 2017 Victor J. Duvanenko High Performance LSD Radix Sort for arrays of unsigned integers
+function radixSortLSD(_input_array, klass) {
+  var numberOfBins = 256;
+  var Log2ofPowerOfTwoRadix = 8;
+  var _output_array = new klass(_input_array.length);
+  var count = new klass(numberOfBins);
+  var _output_array_has_result = false;
+
+  var bitMask = 255;
+  var shiftRightAmount = 0;
+
+  var startOfBin = new klass(numberOfBins);
+  var endOfBin = new klass(numberOfBins);
+
+  while (
+    bitMask != 0 // end processing digits when all the mask bits have been processed and shifted out, leaving no bits set in the bitMask
+  ) {
+    for (var i = 0; i < numberOfBins; i++) count[i] = 0;
+    for (
+      var _current = 0;
+      _current < _input_array.length;
+      _current++ // Scan the array and count the number of times each digit value appears - i.e. size of each bin
+    )
+      count[extractDigit(_input_array[_current], bitMask, shiftRightAmount)]++;
+
+    startOfBin[0] = endOfBin[0] = 0;
+    for (var i = 1; i < numberOfBins; i++) startOfBin[i] = endOfBin[i] = startOfBin[i - 1] + count[i - 1];
+    for (var _current = 0; _current < _input_array.length; _current++)
+      _output_array[endOfBin[extractDigit(_input_array[_current], bitMask, shiftRightAmount)]++] =
+        _input_array[_current];
+
+    bitMask <<= Log2ofPowerOfTwoRadix;
+    shiftRightAmount += Log2ofPowerOfTwoRadix;
+    _output_array_has_result = !_output_array_has_result;
+
+    var tmp = _input_array,
+      _input_array = _output_array,
+      _output_array = tmp; // swap input and output arrays
+  }
+  if (_output_array_has_result)
+    for (
+      var _current = 0;
+      _current < _input_array.length;
+      _current++ // copy from output array into the input array
+    )
+      _input_array[_current] = _output_array[_current];
+
+  return _input_array;
+}

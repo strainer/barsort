@@ -7,9 +7,6 @@
 //Barsort=require('../barsort.js')
 Timsort=timsort
 
-
-
-
 //~ }
 
 Fdrandom.repot("3")
@@ -41,7 +38,7 @@ function testbatch(){
   sortobench   =true
   resortbench  =false//true
   nopostbench  =false//false
-  timsortbench =true//false//true
+  timsortbench =false//true//false//true
   timsortxbench =false//true
   
   canceltestearly = true
@@ -75,7 +72,7 @@ function testbatch(){
   //~ var tlens=[2000]
   var tlens=[400,1200,3600,10000,40000,200000,1000000]
   //~ var tlens=[    1200   ]
-  var tlens=[400,     3600      ,100000]
+  var tlens=[400,     3600,10000      ,100000]
   //~ var tlens=[                    110000]
   //~ var tlens=[         50000             ]
   //~ var tlens=[10,100,1000,10000]
@@ -92,28 +89,41 @@ function testbatch(){
    
     { desc:"equally distributed reals from -20 to 20",
       func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.range(-20,20)} )  } }
-   ,{ desc:"gaussian distribution -1 to 1",
-      func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gaus()}  ) } } 
-   , 
-   { desc:"sideloaded reals -1000 to 1000",
-      func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gbowl()*1000} ) } }
-    , 
-    { desc:"midspiked reals with duplicates -200 to 200",
-    func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(1+len/3),function(){ return Fdrandom.gspire(-200,200)}) ,len ) } }
-   ,
+    ,
+    { desc:"typed array, equally distributed reals from -20 to 20",
+      func:function(len){ 
+        var ttt=new Float64Array(len)
+        var rx= Fdrandom.bulk( 
+          len,function(){ return Fdrandom.range(-20,20)} 
+        )
+        for(var h=0;h<len;h++){ ttt[h]=rx[h] }
+        return ttt
+      } 
+    }
+        
+        
+   //~ ,{ desc:"gaussian distribution -1 to 1",
+      //~ func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gaus()}  ) } } 
+   //~ , 
+   //~ { desc:"sideloaded reals -1000 to 1000",
+      //~ func:function(len){ return Fdrandom.bulk( len,function(){ return Fdrandom.gbowl()*1000} ) } }
+    //~ , 
+    //~ { desc:"midspiked reals with duplicates -200 to 200",
+    //~ func:function(len){ return Fdrandom.mixof( Fdrandom.bulk( Math.floor(1+len/3),function(){ return Fdrandom.gspire(-200,200)}) ,len ) } }
+   //~ ,
 
-   { desc:"xxx huge magnitude with gaps and duplicates and infinites",
-    func:function(len){ 
-      return Fdrandom.mixof( 
-        Fdrandom.bulk( 
-          Math.floor(len/10+10)
-         ,function(){ 
-           var g=Fdrandom.range(1,18000000000000000000000000000000000000000000); 
-           return g*g*g*g*g*g*g*g*Fdrandom.range(-500000,500000)
-          }
-        ) 
-        ,len 
-    ) } }
+   //~ { desc:"xxx huge magnitude with gaps and duplicates and infinites",
+    //~ func:function(len){ 
+      //~ return Fdrandom.mixof( 
+        //~ Fdrandom.bulk( 
+          //~ Math.floor(len/10+10)
+         //~ ,function(){ 
+           //~ var g=Fdrandom.range(1,18000000000000000000000000000000000000000000); 
+           //~ return g*g*g*g*g*g*g*g*Fdrandom.range(-500000,500000)
+          //~ }
+        //~ ) 
+        //~ ,len 
+    //~ ) } }
 //~ ,
 
  //~ { desc:"descending ints",
