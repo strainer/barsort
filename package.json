@@ -1,6 +1,6 @@
 {
   "name": "barsort",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Javascripts fastest numeric sort",
   "main": "barsort.min.js",
   "scripts": {
