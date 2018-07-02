@@ -3,9 +3,9 @@ Barsort
 
 A very fast general purpose and stable numeric sort, specialised to work on numeric input only (integers and reals) and return a sort index.
 
-Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a very fast numeric sort.
+Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a fast numeric sort.
 
-Testing across a large range of possible input distributions and sizes shows barsort is many times faster than node 2016's native sort and very competitive with a proficient javascript implementation of Pythons optimised 'Timsort' - which is for numeric input the next fastest sorting module on npm. 
+Testing across a large range of possible input distributions and sizes shows barsort is many times faster than node 2016's native sort and competitive with a proficient javascript implementation of Pythons optimised 'Timsort'. 
 
 Usage
 -----
@@ -26,6 +26,8 @@ sorted_arr = Barsort.sort( array [,"descend"] )
 ```	
 
 ### Summary of speedtests:
+
+The following tables are for generating a sort index of arrays. Timsort is considerably faster doing light sorting in place.
 
 Pre-sorted input, Lengths: |     100   |    10,000   | 1,000,000
  :-------------- | :-------: | :---------: | :----------
