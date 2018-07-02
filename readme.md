@@ -1,11 +1,11 @@
 Barsort
 =======
 
-Possibly the fastest general purpose and stable numeric sort function on NPM. Specialised to work on numeric input only (integers and reals).
+A very fast general purpose and stable numeric sort, specialised to work on numeric input only (integers and reals) and return a sort index.
 
 Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a very fast numeric sort.
 
-Testing across a large range of possible input distributions and sizes shows barsort is many times faster than nodes native sort and faster in most cases than a profficient javascript implementation of Pythons optimised 'Timsort' - which is for numeric input the next fastest sorting module on npm. 
+Testing across a large range of possible input distributions and sizes shows barsort is many times faster than node 2016's native sort and very competitive with a proficient javascript implementation of Pythons optimised 'Timsort' - which is for numeric input the next fastest sorting module on npm. 
 
 Usage
 -----
@@ -46,10 +46,6 @@ Native sort     |      10 % |     10 %    |     10 %
 Timsort sort    |     100 % |     65 %    |     65 %
 
 
-These summarise very generally benchmark results in [`test_sort.log`](test_sort.log)
-   
-Barsort is about twice as fast as Timsort in many cases and significantly slower in very few.
-
 ### See also
 
 [Timsort](https://github.com/mziccard/node-timsort) is a popular multipurpose in-place sort. 
@@ -64,7 +60,7 @@ The input numbers are first tallied into bins as though calculating a histogram 
   for(var i=0; i<e; i++) 
   { kysbin[i]=(binperval*(kysval[i]-minv))>>0  } 
 ```
-These "counting bins" are subsequently indexed by a fewer number of "placement bins". Originally the algorithm was developed to sort data roughly into histogram bars ( without sorting *within* the bars). The "counting bins" were subdivisions of the bars to reduce spillage between the bars. So, the cumulative sum of the populations of the placement bins is calculated so that for each placement bin an anchor position in the sorting index (output) is known (for values of bins range).
+These "counting bins" are subsequently indexed by a fewer number of "placement bins". The core algorithm was developed to sort data roughly into histogram bars ( without sorting *within* the bars). The "counting bins" were subdivisions of the bars to reduce spillage between the bars. So, the cumulative sum of the populations of the placement bins is calculated so that for each placement bin an anchor position in the sorting index (output) is known (for values of bins range).
 
 Like this:
 ```
@@ -83,7 +79,7 @@ Like this:
   } 
 ```
 
-Finally some 'curious' multi-indirected lookup and updating is done for each input to use the base placement info to assign inputs their position in the sorting index.
+Some 'curious' multi-indirected lookup and updating is done for each input to use the base placement info to assign inputs their position in the sorting index.
 
 Here is that final 'curious' code: 
 ```
