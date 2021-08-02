@@ -1,7 +1,8 @@
-require ('../dlib/mutil.js')
+require ('../dlib/mutilxt.js')
 //~ Fdrandom=require ('../Fdrandom.min.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
 
+/*
 var testlen=50000
 
 var rough=Fdrandom.mixof(Fdrandom.bulk( 500,function(){return Fdrandom.irange(0,1000)} ),Math.floor(testlen))
@@ -9,8 +10,9 @@ var rough=Fdrandom.mixof(Fdrandom.bulk( 500,function(){return Fdrandom.irange(0,
 insertsort0( rough )
 
 return
+*/
 
-for(var len=3;len<300;len=Math.floor(len*1.20)+8)
+for(var len=1000;len<1300;len=Math.floor(len*1.20)+8)
 {
 
 conlog()
@@ -35,6 +37,7 @@ var r=[]
   //~ if(r[i-1]>r[i]) conlog('oops') 
 //~ }
 
+var zval = 1
 
 for(var reps=0;reps<1;reps++){
 
@@ -45,7 +48,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     r.sort( function(a,b){return a-b} )
   }
-  , 10, "sort", 0
+  , zval, "sort", 0
 ) 
 
 ii=0,le=len*36
@@ -54,7 +57,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     r.sort( function(a,b){return a-b} )
   }
-  , 10, "sort", 0
+  , zval, "sort", 0
 ) 
 
 var ii=0,le=len*36
@@ -63,7 +66,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort0( r )
   }
-  , 10, "insert0", 0
+  , zval, "insert0", 0
 ) 
 
 var ii=0,le=len*36
@@ -72,7 +75,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort0( r )
   }
-  , 10, "insert0", 0
+  , zval, "insert0", 0
 ) 
 
 ii=0,le=len*36
@@ -81,7 +84,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort3( r )
   }
-  , 10, "insert3", 0
+  , zval, "insert3", 0
 ) 
 
 ii=0,le=len*36
@@ -90,7 +93,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort5( r )
   }
-  , 10, "insert5", 0
+  , zval, "insert5", 0
 ) 
 
 ii=0,le=len*36
@@ -99,7 +102,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort5( r )
   }
-  , 10, "insert5", 0
+  , zval, "insert5", 0
 ) 
 
 ii=0,le=len*36
@@ -108,7 +111,7 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort3( r )
   }
-  , 10, "insert3", 0
+  , zval, "insert3", 0
 ) 
 
 ii=0,le=len*36
@@ -117,13 +120,21 @@ bench(
     for(var i=0;i<len;i++){ r[i]=rough[ii=(ii<le)?ii+1:0] }
     insertsort4( r )
   }
-  , 10, "insert4", 0
+  , zval, "insert4", 0
 ) 
 
 conlog()
 }
 
 }//test loooo
+
+function preswap(A){
+  for(var ce=A.length-1 ,ca=0, q=0 ;ce>ca; ce--,ca++){
+    if( A[ce]<A[ca] ) { 
+      q=A[ce]; A[ce]=A[ca] ; A[ca]=q
+    }
+  }
+}
 
 function insertsort(A){ // best for 8 to 20 elements iirc
   

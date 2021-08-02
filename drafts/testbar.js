@@ -1,4 +1,4 @@
-require ('../dlib/mutil.js')
+require ('../dlib/mutilxt.js')
 Fdrandom=require ('../dlib/Fdrandom.js')
 Barsort=require('../barsort.js')
 Timsort=require('O:/hub/lead/node-timsort/build/timsort.min.js')

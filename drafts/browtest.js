@@ -1,7 +1,7 @@
  
 //~ if(typeof window ==='undefined'){
 
-//require ('../dlib/mutil.js')
+//require ('../dlib/mutilxt.js')
 
 //Fdrandom=require ('../dlib/Fdrandom.js')
 //Barsort=require('../barsort.js')

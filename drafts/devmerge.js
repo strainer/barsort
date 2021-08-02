@@ -1,4 +1,4 @@
-require ('../dlib/mutil.js')
+require ('../dlib/mutilxt.js')
 Fdr=Fdrandom=require ('../dlib/Fdrandom.js').hot()
 Barsort=require('../barsort.js')
 //~ Barsort=require('../barsort_fsta.js')

@@ -1,27 +1,24 @@
 Barsort
 =======
 
-A very fast general purpose and stable numeric sort, specialised to work on numeric input only (integers and reals) and return a sort index.
+A speed optimised general purpose and stable numeric sort, specialised to work on numeric input only (integers and reals) and return a clone or sort index.
 
-Barsort utilises a specialised algorithm similar to 'counting sort' which was made to place array elements into groups of equal size with similar magnitudes. It is combined here with tweaked insert and merge sorts, and with edge case processing to create a fast numeric sort.
+Barsort utilises a specialised algorithm similar to 'counting sort' originaly made to place array elements into groups of equal size with similar magnitudes. It is combined here with insert and merge sorts, and with edge case processing to create a fast numeric sort.
 
-Testing across a large range of possible input distributions and sizes shows barsort is many times faster than node 2016's native sort and competitive with a proficient javascript implementation of Pythons optimised 'Timsort'. 
+Testing across a good range of possible input distributions and sizes shows barsort is many times faster than node 2016's native sort and competitive with a proficient javascript implementation of Pythons optimised 'Timsort'. 
+
+Alas, the source code is a beastly private exertion beyond redemption. 
 
 Usage
 -----
 
 ```javascript 
-
-//node install
-npm install --save barsort
-
-Barsort=require('./barsort.js')
- 
-//return a sorted index to array ([opt. params])
-index_arr = Barsort.sortorder( array [,index_arr][,"descend"] )  
- 
+  
 //return a sorted clone of array
 sorted_arr = Barsort.sort( array [,"descend"] )      
+
+//return a sorted index to array ([optional params])
+index_arr = Barsort.sortorder( array [,index_arr][,"descend"] )  
   
 ```	
 
@@ -81,9 +78,7 @@ Like this:
   } 
 ```
 
-Some 'curious' multi-indirected lookup and updating is done for each input to use the base placement info to assign inputs their position in the sorting index.
-
-Here is that final 'curious' code: 
+Some multi-indirected lookup and updating is done for each input to use the base placement info to assign inputs their position in the sorting index. Here is that final 'curious' code: 
 ```
   var bapos=new Array(nbar); bapos[0]=0 //( before_anchor_pos )
   for(var i=0;i<nbar-1;i++){ bapos[i+1]=bapos[i]+barsfill[i] }
@@ -101,7 +96,7 @@ Here is that final 'curious' code:
   // (this is not the unpresentable part...)
 ```
 
-The counting sort is used to get elements quite close to where thay should be but they need to be fine-sorted afterward. The classic "insertion sort" is perfect for fine sorting as long it never has to move any elements too far. It is combined with mergesort to cope with rare problem cases.
+The counting sort is used to get elements quite close to where thay should be but they need to be fine-sorted afterward. The classic "insertion sort" is perfect for fine sorting as long it never has to move any elements too far. It can fall back on mergesort to cope with rare problem cases.
 
 Version History
 ---------------

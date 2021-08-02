@@ -1,4 +1,4 @@
-require ('./dlib/mutil.js')
+require ('./dlib/mutilxt.js')
 //~ Fdrandom=require ('../Fdrandom.min.js')
 Fdrandom=require ('./dlib/Fdrandom.js')
 require ('./dlib/Testprngs.js')
